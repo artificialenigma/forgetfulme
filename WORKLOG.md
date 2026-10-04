@@ -166,3 +166,15 @@ Implementation pushed as `06e175e`. The assistant reported the local dashboard a
 ### 22. Assistant — port investigation and fix
 
 Checked containers, proxy/app logs, listening sockets, and HTTP responses. Port 8080 was listening on 127.0.0.1; localhost readiness returned 200 with ready status and the dashboard returned the expected 401 login challenge. Port 8443 had no active TLS listener in local HTTP mode. Found that the localhost-only Caddy host matcher returned an empty 200 for requests addressed to 127.0.0.1. Changed the local site to :80 so both local hostnames route to the app; retained the configurable domain for server HTTPS. Added a regression check for the numeric loopback address and documented local ports and login behavior. The in-app browser inspection was blocked by its browser security policy; no browser-policy workaround was attempted.
+
+Fix pushed as `894e519`. The assistant reported the hostname fix, HTTP port 8080, local TLS limitation, private credentials, and browser inspection limitation.
+
+### 23. User — continued loading failure
+
+> could not load
+
+### 24. Assistant — browser login compatibility
+
+> I’ll replace the browser’s HTTP authentication prompt with a normal login page. The server checks passed, but the browser may be failing to display that prompt. I’ll keep the dashboard protected and test the login flow.
+
+Implemented a normal login page with username/password fields, CSRF validation, and signed expiring HttpOnly/SameSite session cookies. Secure cookies are enabled when Caddy forwards HTTPS. Anonymous dashboard requests redirect to login; API access remains protected, with Basic authentication retained for command-line checks. Added no-store response headers and a same-origin form-action policy. Browser authentication prompt failure is a hypothesis, not a directly verified cause: the earlier browser security-policy rejection prevents further browser inspection. Expanded HTTP smoke checks to exercise login, session access, invalid credentials/cookies, and missing CSRF tokens. Updated README and plan to match the implemented login flow.

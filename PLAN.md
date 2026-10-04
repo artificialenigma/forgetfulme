@@ -85,6 +85,7 @@ The user requested the Docker stack first. The initial implementation includes:
 - Caddy reverse proxy, loopback-only ports for local testing, and configurable HTTPS domain for server deployment.
 - PostgreSQL with persistent storage and one-shot schema initialization.
 - FastAPI webapp/API foundation with an authenticated stack-status dashboard and public health endpoints.
+- Browser login uses an HTML form and signed eight-hour HttpOnly/SameSite session cookie, with CSRF checks and Secure cookies over HTTPS. Basic authentication remains available for API checks.
 - Database-backed job queue, worker, and scheduler executing periodic maintenance jobs with heartbeat checks.
 - Scheduled database/content backups, retention, retry behavior, and a smoke test that restores a dump into a disposable database.
 - Private generated local credentials, pinned Python dependencies, bounded logs, and startup health dependencies.

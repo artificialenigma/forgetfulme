@@ -1,21 +1,73 @@
 import html
 import os
 import secrets
+from urllib.parse import parse_qs
 from typing import Annotated
-from fastapi import Depends, FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from app.db import connect
+from app.auth import COOKIE, TTL, credentials_valid, issue_session, session_valid
 
 app = FastAPI(title="Forgetful Me", docs_url=None, redoc_url=None, openapi_url=None)
-security = HTTPBasic()
+security = HTTPBasic(auto_error=False)
 
 
-def authenticate(credentials: Annotated[HTTPBasicCredentials, Depends(security)]):
-    user_ok = secrets.compare_digest(credentials.username.encode(), os.environ["ADMIN_USER"].encode())
-    password_ok = secrets.compare_digest(credentials.password.encode(), os.environ["ADMIN_PASSWORD"].encode())
-    if not (user_ok and password_ok):
-        raise HTTPException(401, "Authentication required", headers={"WWW-Authenticate": "Basic"})
+@app.middleware("http")
+async def prevent_caching(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+def authorized(request, credentials):
+    return session_valid(request.cookies.get(COOKIE)) or (
+        credentials is not None and credentials_valid(credentials.username, credentials.password)
+    )
+
+
+def authenticate(request: Request, credentials: Annotated[HTTPBasicCredentials | None, Depends(security)]):
+    if not authorized(request, credentials):
+        raise HTTPException(401, "Authentication required")
+
+
+def login_page(error=""):
+    csrf = secrets.token_hex(32)
+    page = f"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in · Forgetful Me</title>
+<style>body{{font:16px system-ui;background:#f7f5ef;color:#253831;margin:60px auto;padding:24px;max-width:440px}}form{{background:white;padding:28px;border-radius:12px}}label{{display:block;margin:16px 0 6px}}input{{box-sizing:border-box;width:100%;padding:12px;font:inherit;border:1px solid #a7b6ad;border-radius:6px}}button{{margin-top:24px;padding:12px 20px;background:#253831;color:white;border:0;border-radius:6px;font:inherit}}p{{line-height:1.6}}</style>
+<h1>Forgetful Me</h1><p>Sign in to your browsing archive.</p><form method="post" action="/login"><input type="hidden" name="csrf" value="{csrf}"><p role="alert">{html.escape(error)}</p><label for="username">Username</label><input id="username" name="username" autocomplete="username" required maxlength="256"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required maxlength="1024"><button type="submit">Sign in</button></form><p>Use the credentials from your local .env file.</p></html>"""
+    response = HTMLResponse(page, status_code=401 if error else 200)
+    response.set_cookie("forgetfulme_csrf", csrf, httponly=True, samesite="strict", max_age=600)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.get("/login")
+def login():
+    return login_page()
+
+
+@app.post("/login")
+async def submit_login(request: Request):
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > 8192:
+            raise HTTPException(413, "Login request too large")
+    data = parse_qs(body.decode("utf-8", errors="replace"))
+    csrf = data.get("csrf", [""])[0]
+    cookie = request.cookies.get("forgetfulme_csrf", "")
+    if not csrf or not cookie or not secrets.compare_digest(csrf.encode(), cookie.encode()):
+        raise HTTPException(403, "Please reload the login page and try again")
+    if not credentials_valid(data.get("username", [""])[0], data.get("password", [""])[0]):
+        return login_page("Incorrect username or password.")
+    response = RedirectResponse("/", status_code=303)
+    # Caddy overwrites X-Forwarded-Proto; the app has no publicly exposed port.
+    response.set_cookie(COOKIE, issue_session(), httponly=True, samesite="strict",
+                        secure=request.headers.get("x-forwarded-proto") == "https", max_age=TTL)
+    response.delete_cookie("forgetfulme_csrf")
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.get("/health/live")
@@ -45,8 +97,10 @@ def status():
     return snapshot()
 
 
-@app.get("/", response_class=HTMLResponse, dependencies=[Depends(authenticate)])
-def dashboard():
+@app.get("/", response_class=HTMLResponse)
+def dashboard(request: Request, credentials: Annotated[HTTPBasicCredentials | None, Depends(security)]):
+    if not authorized(request, credentials):
+        return RedirectResponse("/login", status_code=303)
     state = snapshot()
     rows = "".join(f"<tr><td>{html.escape(s['service'])}</td><td>{'Healthy' if s['healthy'] else 'Stale'}</td><td>{html.escape(str(s['last_seen']))}</td></tr>" for s in state["services"])
     return f"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Forgetful Me</title>

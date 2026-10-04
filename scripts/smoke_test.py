@@ -1,11 +1,14 @@
 """Exercise the running local stack, including an isolated database restore."""
 import base64
+import http.cookiejar
 import json
+import re
 from pathlib import Path
 import subprocess
 import time
 import urllib.error
 import urllib.request
+import urllib.parse
 
 root = Path(__file__).resolve().parent.parent
 env = dict(line.split('=', 1) for line in (root / '.env').read_text().splitlines() if line and not line.startswith('#'))
@@ -22,7 +25,7 @@ def get(path, authenticated=False):
 assert json.loads(get('/health/ready'))['status'] == 'ready'
 with urllib.request.urlopen(base.replace('localhost', '127.0.0.1') + '/health/ready', timeout=10) as response:
     assert json.loads(response.read())['status'] == 'ready'
-for path in ['/', '/api/status']:
+for path in ['/api/status']:
     try:
         get(path)
     except urllib.error.HTTPError as error:
@@ -30,6 +33,39 @@ for path in ['/', '/api/status']:
     else:
         raise AssertionError('Protected route allowed unauthenticated access')
 assert b'Forgetful Me' in get('/', True)
+assert b'Username' in get('/') and b'Stack status' not in get('/')
+jar = http.cookiejar.CookieJar()
+browser = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+with browser.open(base + '/login') as response:
+    csrf = re.search(r'name="csrf" value="([a-f0-9]+)"', response.read().decode()).group(1)
+form = urllib.parse.urlencode({'username': env['ADMIN_USER'], 'password': env['ADMIN_PASSWORD'], 'csrf': csrf}).encode()
+with browser.open(base + '/login', data=form) as response:
+    assert b'Stack status' in response.read()
+session = next(cookie for cookie in jar if cookie.name == 'forgetfulme_session')
+assert session.has_nonstandard_attr('HttpOnly')
+assert session.get_nonstandard_attr('SameSite') == 'strict'
+with browser.open(base + '/api/status') as response:
+    assert 'services' in json.loads(response.read())
+try:
+    browser.open(base + '/login', data=urllib.parse.urlencode({'username': env['ADMIN_USER'], 'password': env['ADMIN_PASSWORD']}).encode())
+except urllib.error.HTTPError as error:
+    assert error.code == 403
+else:
+    raise AssertionError('Login accepted without CSRF protection')
+with browser.open(base + '/login') as response:
+    csrf = re.search(r'name="csrf" value="([a-f0-9]+)"', response.read().decode()).group(1)
+try:
+    browser.open(base + '/login', data=urllib.parse.urlencode({'username': env['ADMIN_USER'], 'password': 'invalid-test-password', 'csrf': csrf}).encode())
+except urllib.error.HTTPError as error:
+    assert error.code == 401
+else:
+    raise AssertionError('Login accepted an incorrect password')
+try:
+    urllib.request.urlopen(urllib.request.Request(base + '/api/status', headers={'Cookie': 'forgetfulme_session=invalid'}))
+except urllib.error.HTTPError as error:
+    assert error.code == 401
+else:
+    raise AssertionError('API accepted an invalid session')
 for attempt in range(20):
     state = json.loads(get('/api/status', True))
     if {s['service'] for s in state['services'] if s['healthy']} == {'worker', 'scheduler'} and state['jobs']['completed'] > 0:
