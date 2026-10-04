@@ -107,3 +107,11 @@ The user requested the Docker stack first. The initial implementation includes:
 - Local startup, backup/restore, and server migration instructions.
 
 The Docker stack is implemented. Browser extensions, history ingestion/search, page extraction, and Obsidian delivery remain future work. The content volume is reserved for future captures. Background jobs currently perform maintenance only. Local backup files must be copied elsewhere for protection from server loss.
+
+## Browser collection implementation — 2026-10-04
+
+- Per-browser revocable ingestion tokens, stored as SHA-256 hashes server-side; administrator sessions create/revoke tokens with session-bound CSRF protection.
+- PostgreSQL devices and visits, unique device/event IDs, batches up to 100, URL/time validation, latest 200 visits in the webapp.
+- Chrome MV3 extension: new local visits plus optional last-30-day import using history search/getVisits; minute alarms, persistent bounded offline queue, explicit opt-in, domain exclusions, server-specific optional permissions.
+- Safari source: shared add-on with nonpersistent background script and new nonprivate completed tab-load capture when history API is unavailable. Existing Safari history import is unavailable. Native packaging/manual capture verification remain pending; local Xcode license prevents conversion.
+- HTTPS for remote endpoints, loopback-only HTTP during local testing. Existing queue cleared when destination/token changes. No scraping or automatic Obsidian export in this collection milestone.

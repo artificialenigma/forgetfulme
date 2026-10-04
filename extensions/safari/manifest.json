@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Forgetful Me",
+  "version": "0.1.0",
+  "description": "Save browsing visits to your own Forgetful Me server.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "tabs"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "action": {
+    "default_popup": "options.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": false
+  }
+}

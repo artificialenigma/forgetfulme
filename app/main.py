@@ -131,3 +131,8 @@ def dashboard(request: Request, credentials: Annotated[HTTPBasicCredentials | No
     if not authorized(request, credentials):
         return RedirectResponse("/login", status_code=303)
     return render(snapshot())
+
+
+# Device tokens authorize ingestion only, independently of administrator sessions.
+from app.browser_history import router as history_router
+app.include_router(history_router)

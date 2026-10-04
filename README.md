@@ -119,3 +119,7 @@ Only Compose configuration was validated here. Image build, GPU inference, parsi
 
 - [Project plan](PLAN.md) — decisions and open questions.
 - [Conversation and worklog](WORKLOG.md) — discussions and completed work.
+
+### Browser add-ons
+
+Chrome collection and a Safari source package are now available. See [installation and privacy instructions](extensions/README.md). Sign in, create a token in **Browser devices**, load `extensions/chrome` as an unpacked extension, and configure it. New visits appear in **Browsing history**. Chrome optionally imports the last 30 days; Safari captures new tab loads and requires Xcode packaging. Safari packaging is currently blocked by the unaccepted local Xcode license. Automatic Obsidian export remains planned.
