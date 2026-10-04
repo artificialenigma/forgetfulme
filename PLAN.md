@@ -15,7 +15,7 @@ The product has two main parts:
 1. A Docker stack containing a reverse proxy, database, and webapp. The application receives and stores data sent by browser plugins and provides the Obsidian export feature.
 2. Browser plugins/extensions for Chrome and Safari that push browsing data to the application.
 
-Specific frameworks, database, reverse proxy, API contract, and browser/device platform coverage have not been selected.
+The initial Docker implementation uses Caddy, PostgreSQL 17, and Python/FastAPI. Browser ingestion API contracts and browser/device platform coverage remain undecided.
 
 ## Confirmed deployment lifecycle
 
@@ -68,7 +68,6 @@ Pairing, per-device credentials, exclusion settings, export progress, and failed
 - How will the server deliver data to the Obsidian vault?
 - What Markdown structure should exports use, and should export be manual, automatic, or both?
 - What authentication, retention, and exclusion rules are required?
-- Which application stack, database, and reverse proxy should be used?
 - What server environment will host the production deployment?
 
 ## Documentation maintenance
@@ -81,4 +80,14 @@ Pairing, per-device credentials, exclusion settings, export progress, and failed
 
 ## Current status
 
-Initial planning and documentation only. Application, Docker stack, extensions, and Obsidian integration have not been implemented.
+The user requested the Docker stack first. The initial implementation includes:
+
+- Caddy reverse proxy, loopback-only ports for local testing, and configurable HTTPS domain for server deployment.
+- PostgreSQL with persistent storage and one-shot schema initialization.
+- FastAPI webapp/API foundation with an authenticated stack-status dashboard and public health endpoints.
+- Database-backed job queue, worker, and scheduler executing periodic maintenance jobs with heartbeat checks.
+- Scheduled database/content backups, retention, retry behavior, and a smoke test that restores a dump into a disposable database.
+- Private generated local credentials, pinned Python dependencies, bounded logs, and startup health dependencies.
+- Local startup, backup/restore, and server migration instructions.
+
+The Docker stack is implemented. Browser extensions, history ingestion/search, page extraction, and Obsidian delivery remain future work. The content volume is reserved for future captures. Background jobs currently perform maintenance only. Local backup files must be copied elsewhere for protection from server loss.

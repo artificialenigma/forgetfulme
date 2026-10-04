@@ -1,0 +1,139 @@
+name: forgetfulme
+
+x-app: &app
+  image: forgetfulme-app:local
+  build: .
+  restart: unless-stopped
+  init: true
+  environment:
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run python3 scripts/setup.py first}
+    ADMIN_USER: ${ADMIN_USER:-admin}
+    ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Run python3 scripts/setup.py first}
+  networks: [backend]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  read_only: true
+  tmpfs: [/tmp]
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: '3'}
+
+services:
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:80'
+      - '${BIND_ADDRESS:-127.0.0.1}:${HTTPS_PORT:-8443}:443'
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-http://localhost}
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge, backend]
+    depends_on:
+      web: {condition: service_healthy}
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: forgetfulme
+      POSTGRES_USER: forgetfulme
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run python3 scripts/setup.py first}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [backend]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U forgetfulme -d forgetfulme']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+
+  migrate:
+    <<: *app
+    restart: 'no'
+    command: [python, -m, app.init_db]
+    depends_on:
+      db: {condition: service_healthy}
+
+  web:
+    <<: *app
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health/ready", timeout=3)']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  worker:
+    <<: *app
+    command: [python, -m, app.jobs, worker]
+    healthcheck:
+      test: [CMD, python, -m, app.health, worker]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    volumes:
+      - content_data:/data/content
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+
+  scheduler:
+    <<: *app
+    command: [python, -m, app.jobs, scheduler]
+    healthcheck:
+      test: [CMD, python, -m, app.health, scheduler]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+
+  backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    entrypoint: [/bin/sh, /scripts/backup.sh]
+    environment:
+      PGHOST: db
+      PGUSER: forgetfulme
+      PGDATABASE: forgetfulme
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Run python3 scripts/setup.py first}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    volumes:
+      - ./scripts/backup.sh:/scripts/backup.sh:ro
+      - ./backups:/backups
+      - content_data:/data/content:ro
+    networks: [backend]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD-SHELL, 'test -f /backups/last-success && test $$(( $$(date +%s) - $$(cat /backups/last-success) )) -lt $$(( BACKUP_INTERVAL_SECONDS + 300 ))']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+
+networks:
+  edge:
+  backend:
+    internal: true
+
+volumes:
+  postgres_data:
+  content_data:
+  caddy_data:
+  caddy_config:

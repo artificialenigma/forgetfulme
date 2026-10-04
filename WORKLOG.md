@@ -136,3 +136,23 @@ Publishing succeeded: commit `b412b3c`, pushed to `origin/main`; working directo
 Recommended first-version additions: background worker, scheduler, persistent captured-content storage, and scheduled backups with tested restores. Proposed PostgreSQL full-text search can cover initial search without a dedicated search container. Add a broker if the chosen job framework requires one. Later options: uptime monitoring, Meilisearch, object storage, a browser-rendering worker for selected public pages, and optional AI enrichment. Pairing, credentials, exclusions, and export/retry controls remain application features. These suggestions are pending agreement and were added to PLAN.md as proposals.
 
 Sources checked: PostgreSQL full-text search (https://www.postgresql.org/docs/current/textsearch.html), Celery getting started (https://docs.celeryq.dev/en/main/getting-started/), and Meilisearch typo tolerance specifications (https://specs.meilisearch.dev/specifications/text/0117-typo-tolerance-setting-api.html).
+
+Publishing succeeded: commit `3adba64`, pushed to `origin/main`.
+
+### 19. User — implement the Docker stack
+
+> build the docker stack first
+
+### 20. Assistant — implementation
+
+> I’ll build the initial Docker stack with the webapp/API, database, background worker, scheduler, reverse proxy, and backups, then validate it and push the changes.
+
+> I’m using Caddy, PostgreSQL, and a small Python webapp, with a database-backed job queue to keep the stack compact. Docker is installed but its engine isn’t running; I’ll try starting it so I can test the containers. This first build will provide a working stack and status dashboard; browser collection and Obsidian delivery will follow.
+
+Started Docker Desktop and built a Compose stack with Caddy, PostgreSQL 17, FastAPI, a one-shot schema initializer, worker, scheduler, and scheduled backup service. Generated private local credentials without including them in Git or the Docker build. Added an authenticated dashboard, readiness/liveness endpoints, persistent volumes, background maintenance jobs, heartbeat health checks, backup retention/retries, dependency locking, and README instructions for local use, HTTPS server deployment, and recovery.
+
+> The containers are running, and the worker has processed its first scheduled job. I’m now checking authentication, backups, and a database restore. The README also covers moving the stack to a server with HTTPS.
+
+Validation: Compose configuration and Python/shell syntax checked; images built and services started locally; smoke checks passed for readiness, authentication, dashboard, worker/scheduler execution, backup archive readability, and restoration into a disposable database. Browser ingestion, extraction, search, and Obsidian integration are explicitly not implemented in this foundational build.
+
+References checked: Docker Compose startup order (https://docs.docker.com/compose/how-tos/startup-order/), Caddy configuration (https://caddyserver.com/docs/caddyfile/options), and PostgreSQL pg_dump (https://www.postgresql.org/docs/current/app-pgdump.html).
