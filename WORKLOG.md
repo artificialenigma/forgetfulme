@@ -122,3 +122,17 @@ The assistant explained that visit metadata and optional loaded-page extraction 
 ### 16. Assistant — publishing updates
 
 > I’ll commit and push the updated plan and conversation log to `main`.
+
+Publishing succeeded: commit `b412b3c`, pushed to `origin/main`; working directory was clean.
+
+### 17. User — Docker stack improvements
+
+> what eles can you include in the docker stack to make the app better?
+
+### 18. Assistant — proposed stack improvements
+
+> I’ll look at useful additions for background processing, search, storage, and recovery, keeping the initial stack manageable.
+
+Recommended first-version additions: background worker, scheduler, persistent captured-content storage, and scheduled backups with tested restores. Proposed PostgreSQL full-text search can cover initial search without a dedicated search container. Add a broker if the chosen job framework requires one. Later options: uptime monitoring, Meilisearch, object storage, a browser-rendering worker for selected public pages, and optional AI enrichment. Pairing, credentials, exclusions, and export/retry controls remain application features. These suggestions are pending agreement and were added to PLAN.md as proposals.
+
+Sources checked: PostgreSQL full-text search (https://www.postgresql.org/docs/current/textsearch.html), Celery getting started (https://docs.celeryq.dev/en/main/getting-started/), and Meilisearch typo tolerance specifications (https://specs.meilisearch.dev/specifications/text/0117-typo-tolerance-setting-api.html).

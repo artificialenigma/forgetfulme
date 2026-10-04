@@ -52,6 +52,14 @@ These are discussion proposals, not committed scope.
 
 This proposal awaits agreement; no collection code has been implemented.
 
+### Proposed Docker additions (2026-10-04)
+
+For the first version, add a background worker for extraction, indexing, and Obsidian export; a scheduler for recurring jobs; persistent storage for captured content; and scheduled backups with restore checks. A database-backed job queue can keep the initial deployment small, with a separate broker added if the selected framework requires it. PostgreSQL with built-in full-text search is a proposed database choice, not a confirmed selection.
+
+For server deployment, consider an uptime monitor and optional search service such as Meilisearch if search requirements exceed the initial database search. Object storage may be useful if attachments and snapshots grow beyond simple file volumes. A browser-rendering worker and AI enrichment are optional later additions, dependent on content-capture scope and resource requirements. Server fetching cannot reproduce a user's authenticated browser session by default.
+
+Pairing, per-device credentials, exclusion settings, export progress, and failed-job retry controls belong in the application. Additional containers do not replace these features. None of these additions are approved scope yet.
+
 ## Open decisions
 
 - Which operating systems and device types must Chrome and Safari support?
