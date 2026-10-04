@@ -60,6 +60,12 @@ For server deployment, consider an uptime monitor and optional search service su
 
 Pairing, per-device credentials, exclusion settings, export progress, and failed-job retry controls belong in the application. Additional containers do not replace these features. None of these additions are approved scope yet.
 
+### Optional Archive Desk companion
+
+Added `compose.archive.yaml` with an opt-in `archive` profile, building from the sibling `internetarchivemanager` checkout (configurable through `ARCHIVE_DESK_PATH`). Archive Desk provides Internet Archive/HathiTrust book inspection, permitted reader-page export as PDF/image ZIP, OCR, and its own Chromium/noVNC login session. Its original source and provider access checks remain unchanged.
+
+The companion has local-only ports 8766 and 6080, its own internet-enabled network, health check, and persistent browser/export volume. It does not have access to the database network. This integrates service management only; database records, dashboard controls, and Obsidian export integration are still pending. Its state is not yet covered by the existing backup service, and queues are not persistent. Remote server use needs gateway authentication, host/origin handling, and a protected browser interface; the current companion is local-only.
+
 ## Open decisions
 
 - Which operating systems and device types must Chrome and Safari support?

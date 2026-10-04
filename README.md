@@ -66,6 +66,25 @@ Point the domain at the server and permit inbound TCP 80/443. Caddy obtains HTTP
 
 Changing `POSTGRES_PASSWORD` in `.env` does not change the password in an existing PostgreSQL volume; rotate it in the database as well. Do not expose the database directly.
 
+## Optional Archive Desk service
+
+Archive Desk, from the sibling `internetarchivemanager` project, exports accessible Internet Archive/HathiTrust reader pages to PDF or image ZIP, including available OCR. It is a book-export companion, not a general webpage scraper. Its original source remains unchanged and retains its GPL-3.0 license.
+
+Keep that checkout beside this project, or set `ARCHIVE_DESK_PATH` to its path. Start it with:
+
+```sh
+docker compose -f compose.yaml -f compose.archive.yaml --profile archive up -d --build --wait
+python3 scripts/archive_smoke_test.py
+```
+
+Open [Archive Desk](http://localhost:8766) and its [login browser](http://localhost:6080/vnc.html). Sign in and, where required, borrow the book in that dedicated browser. Access checks in Archive Desk remain intact. Your regular browser's login is separate.
+
+Both added ports always bind to loopback. The browser view has no separate password; do not expose it on a server. The existing application accepts local HTTP hosts only and has its own app token rather than Forgetful Me login. Shared remote access therefore needs an authenticated gateway, host/origin adjustments, and WebSocket routing before deployment.
+
+`ARCHIVE_HTTP_PORT` and `ARCHIVE_BROWSER_PORT` can change the local ports if occupied. The service has a separate network with internet access and no connection to Forgetful Me's database network. Browser profile and exports persist in the new `archive_state` volume; existing standalone Archive Desk data is not imported. Its in-memory queue does not survive restarts, although completed files remain on disk. This volume is not included in Forgetful Me's existing backup job; back it up separately, treating the saved browser profile as credentials.
+
+Use the same two `-f` arguments and `--profile archive` for subsequent Compose management of this companion. Server relocation requires its source checkout or a published image, plus its separate state backup. This first integration adds service lifecycle management only; shared archive records, dashboard export controls, and Obsidian attachment delivery remain future work.
+
 ## Project documentation
 
 - [Project plan](PLAN.md) — decisions and open questions.

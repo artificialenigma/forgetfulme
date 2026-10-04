@@ -1,0 +1,40 @@
+# Optional companion service. Keep its source checkout beside Forgetful Me,
+# or set ARCHIVE_DESK_PATH to its absolute path before running Compose.
+services:
+  archive-desk:
+    profiles: [archive]
+    build:
+      context: ${ARCHIVE_DESK_PATH:-../internetarchivemanager}
+    image: forgetfulme-archive-desk:local
+    restart: unless-stopped
+    init: true
+    ports:
+      - '127.0.0.1:${ARCHIVE_HTTP_PORT:-8766}:8765'
+      - '127.0.0.1:${ARCHIVE_BROWSER_PORT:-6080}:6080'
+    environment:
+      PORT: '8765'
+      PUBLIC_PORT: ${ARCHIVE_HTTP_PORT:-8766}
+      HOST: 0.0.0.0
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      BROWSER_HEADLESS: 'false'
+      DISPLAY: ':99'
+    volumes:
+      - archive_state:/app/.local-state
+    networks: [archive]
+    shm_size: 1gb
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:8765/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+
+# This service needs provider access, but does not need database access.
+networks:
+  archive:
+
+volumes:
+  archive_state:

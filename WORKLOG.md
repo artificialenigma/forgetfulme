@@ -200,3 +200,25 @@ Chose a calm, compact operations dashboard with a dark green navigation rail, ne
 > The dashboard now has summary cards, clearer service states, and a recent-job table. Timestamps use Maldives time, and the layout adapts for mobile. It also clearly marks browser collection and Obsidian delivery as planned features. I’m checking the rendered HTML, stylesheet, and existing login flow before pushing.
 
 Rebuilt the running Docker app and reloaded the proxy stylesheet policy. HTTP smoke checks passed for the login/dashboard, worker/scheduler, backups and restoration; the stylesheet endpoint returned successfully. Python syntax and Git whitespace checks passed. Direct browser visual verification remains unavailable due to the previously reported browser policy restriction.
+
+Dashboard presentation update pushed as `a15e514`.
+
+### 28. User — inspect and integrate Archive Manager
+
+> check /Users/fa-001524/Documents/protos/internetarchivemanager and possible bring that function as a service in this stack?
+
+### 29. Assistant — Archive Desk companion
+
+> I’ll inspect Internet Archive Manager to see what it does, how it runs, and whether it can fit into this Docker stack as a service.
+
+Read its README, Dockerfile/Compose/entrypoint, server routing and authentication, session access checks, job storage, and package metadata. It is Archive Desk: a Node/Playwright app exporting accessible Internet Archive/HathiTrust scanned book pages to PDF or ZIP with available OCR. It is not a general website scraper. Its GPL-3.0 source remains in the original checkout. The service uses a separate Chromium login profile, a local-only host/origin policy, app tokens, and an unpassworded loopback noVNC interface. Jobs are in memory; exported files and profiles persist.
+
+> The project is “Archive Desk”: it exports accessible Internet Archive and HathiTrust book pages to PDF or ZIP, with optional OCR. It already has a Docker service and a separate Chromium login session.
+>
+> I’ll add it as an optional service in Forgetful Me’s stack. Initially it will keep its own interface and storage; connecting its exports to Forgetful Me’s database and Obsidian will be a separate step.
+
+Added an optional Compose overlay with the archive profile, source-path configuration, local-only ports, a separate egress network, persistent state, Chromium shared memory, health checking, and bounded logs. Documented startup, separate state/backups, queue restart limitations, and the changes needed before shared server access. No original Archive Desk source or existing browser profile was modified or imported. Compose configuration validation passed.
+
+Archive Desk's existing test suite passed: 55 tests, including mocked access/session handling, PDF/ZIP generation, job lifecycle, and route boundaries. Added a companion smoke script that checks UI serving, API token enforcement, job listing, and the browser-view HTTP endpoint without signing in to a provider account.
+
+Built and started the optional container successfully; its health check and all companion smoke checks passed. Local ports 8766 (app) and 6080 (browser view) were verified. No live authenticated book export was attempted. Shared Forgetful Me records, Obsidian integration, and inclusion of its state in the main backup job remain pending.
