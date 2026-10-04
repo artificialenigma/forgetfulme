@@ -156,3 +156,13 @@ Started Docker Desktop and built a Compose stack with Caddy, PostgreSQL 17, Fast
 Validation: Compose configuration and Python/shell syntax checked; images built and services started locally; smoke checks passed for readiness, authentication, dashboard, worker/scheduler execution, backup archive readability, and restoration into a disposable database. Browser ingestion, extraction, search, and Obsidian integration are explicitly not implemented in this foundational build.
 
 References checked: Docker Compose startup order (https://docs.docker.com/compose/how-tos/startup-order/), Caddy configuration (https://caddyserver.com/docs/caddyfile/options), and PostgreSQL pg_dump (https://www.postgresql.org/docs/current/app-pgdump.html).
+
+Implementation pushed as `06e175e`. The assistant reported the local dashboard at http://localhost:8080, credentials in the private .env, passing health and restore checks, and browser/Obsidian work still pending.
+
+### 21. User — connection troubleshooting
+
+> check errors not reachable check the ports
+
+### 22. Assistant — port investigation and fix
+
+Checked containers, proxy/app logs, listening sockets, and HTTP responses. Port 8080 was listening on 127.0.0.1; localhost readiness returned 200 with ready status and the dashboard returned the expected 401 login challenge. Port 8443 had no active TLS listener in local HTTP mode. Found that the localhost-only Caddy host matcher returned an empty 200 for requests addressed to 127.0.0.1. Changed the local site to :80 so both local hostnames route to the app; retained the configurable domain for server HTTPS. Added a regression check for the numeric loopback address and documented local ports and login behavior. The in-app browser inspection was blocked by its browser security policy; no browser-policy workaround was attempted.

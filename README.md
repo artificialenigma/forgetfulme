@@ -15,6 +15,8 @@ docker compose up -d --build --wait
 
 Open [localhost:8080](http://localhost:8080). Sign in with `ADMIN_USER` and `ADMIN_PASSWORD` from your local `.env`. Setup generates random passwords, excludes `.env` from Git and the Docker build, and refuses to overwrite existing settings. Only the proxy publishes ports; local bindings default to `127.0.0.1`.
 
+Local `SITE_ADDRESS=:80` accepts both `localhost` and `127.0.0.1`. Use HTTP on port 8080 for local testing. The mapped port 8443 does not serve HTTPS until a TLS site is configured. A 401 response at `/` means the server is reachable and requires login; `/health/ready` should return `{"status":"ready"}` without authentication. If an embedded browser cannot display the login challenge, open the app in your regular browser.
+
 ```sh
 docker compose ps
 docker compose logs --tail=100 web worker scheduler backup

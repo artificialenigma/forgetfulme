@@ -20,6 +20,8 @@ def get(path, authenticated=False):
 
 
 assert json.loads(get('/health/ready'))['status'] == 'ready'
+with urllib.request.urlopen(base.replace('localhost', '127.0.0.1') + '/health/ready', timeout=10) as response:
+    assert json.loads(response.read())['status'] == 'ready'
 for path in ['/', '/api/status']:
     try:
         get(path)
