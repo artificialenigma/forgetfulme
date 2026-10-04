@@ -92,3 +92,33 @@ Automatic approval review rejected the action because the files include our conv
 ### 11. Assistant — approved publishing
 
 > I’ll commit and push the approved documentation to `artificialenigma/forgetfulme` on `main`.
+
+Publishing succeeded: commit `81a3e9b`, pushed to `origin/main`.
+
+### 12. Assistant — publishing result
+
+> Committed and pushed the documentation to `main`.
+>
+> Commit: `81a3e9b` — `docs: record project plan and conversation history`
+
+### 13. User — collection approach
+
+> how do you plan to scrape the information on the links from the browsers?
+
+### 14. Assistant — collection proposal
+
+> I’ll check the browser extension APIs so the collection plan reflects what Chrome and Safari actually allow.
+
+Proposed approach: collect visit metadata through browser APIs, then optionally extract readable content from the loaded page with a permitted content script. Chrome supports historical import through `history.search()` and `history.getVisits()`, and new-visit events through `history.onVisited`. Safari support must be validated on the selected versions; historical import is not promised. Extract title, URL, description, author/date when available, and main article text after loading; account for dynamic navigation and missing content. Queue records locally and send authenticated batches to the Docker API with stable event IDs for retry deduplication. Preserve repeat visits separately from content snapshots. The server stores records and prepares Markdown for the pending Obsidian delivery mechanism. Proposed default is metadata collection, with content capture enabled for selected sites or individual pages; skip private browsing and excluded sites, and do not collect credentials or form inputs. Old URLs cannot provide the original page content unless it was saved at the time. This is a proposal, not an approved implementation decision.
+
+References checked: Chrome history API (https://developer.chrome.com/docs/extensions/reference/api/history), Chrome content scripts (https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts), Apple Safari web extensions (https://developer.apple.com/documentation/SafariServices/safari-web-extensions), and Safari browser compatibility guidance (https://developer.apple.com/documentation/safariservices/assessing-your-safari-web-extension-s-browser-compatibility).
+
+The assistant explained that visit metadata and optional loaded-page extraction would be collected separately, queued locally, uploaded in authenticated batches, and prepared as Markdown for Obsidian. Existing history does not contain past page content. Automatic approval review blocked publishing these new documentation changes and requested fresh approval.
+
+### 15. User — publish updates
+
+> push the updates to git
+
+### 16. Assistant — publishing updates
+
+> I’ll commit and push the updated plan and conversation log to `main`.

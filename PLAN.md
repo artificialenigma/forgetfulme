@@ -40,6 +40,18 @@ Local testing must not assume a shared local filesystem will also exist after se
 
 These are discussion proposals, not committed scope.
 
+### Proposed collection approach (2026-10-04)
+
+- Separate visit metadata collection from optional page-content extraction.
+- Chrome: use the history API for existing-history import and new visits; use content scripts for permitted loaded-page extraction.
+- Safari: validate supported APIs on the selected platforms and versions before committing to historical import; plan to capture new visits and permitted loaded-page content.
+- Extract readable main content and available metadata, accounting for dynamic pages and recording extraction failures.
+- Send authenticated batches from a persistent local queue with stable event IDs; keep repeat visits separate from content snapshots.
+- Proposed default: collect history metadata and enable content capture for selected sites or explicit saves. Exclude private browsing, blocked sites, credentials, and form inputs.
+- Historical links alone do not preserve the content that existed at the time of the visit.
+
+This proposal awaits agreement; no collection code has been implemented.
+
 ## Open decisions
 
 - Which operating systems and device types must Chrome and Safari support?
