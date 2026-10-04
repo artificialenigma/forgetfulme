@@ -222,3 +222,15 @@ Added an optional Compose overlay with the archive profile, source-path configur
 Archive Desk's existing test suite passed: 55 tests, including mocked access/session handling, PDF/ZIP generation, job lifecycle, and route boundaries. Added a companion smoke script that checks UI serving, API token enforcement, job listing, and the browser-view HTTP endpoint without signing in to a provider account.
 
 Built and started the optional container successfully; its health check and all companion smoke checks passed. Local ports 8766 (app) and 6080 (browser view) were verified. No live authenticated book export was attempted. Shared Forgetful Me records, Obsidian integration, and inclusion of its state in the main backup job remain pending.
+
+Archive Desk integration pushed as `70e525b`.
+
+### 30. User — check Obsidian connectivity
+
+> check the connectivity with obsidian vault
+
+### 31. Assistant — connectivity inspection
+
+> I’ll check whether the stack has an Obsidian connection configured and whether a local vault is available.
+
+Read-only checks found an open local vault registered with Obsidian. The vault and its .obsidian directory exist, and host permissions permit reads and writes. No community-plugin list was found. Inspected application code, Compose settings, and running web/worker mounts: there is no implemented Obsidian integration, vault mount, or configured Obsidian API connection. The worker only mounts the internal captured-content volume. Conclusion: the local vault is available but is not connected to Forgetful Me. No vault files were changed, and no write/export test was performed. The private absolute vault location is omitted from this published log.

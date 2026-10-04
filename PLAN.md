@@ -25,6 +25,8 @@ The initial Docker implementation uses Caddy, PostgreSQL 17, and Python/FastAPI.
 
 ## Obsidian integration — requirement confirmed, transport pending
 
+Connectivity check on 2026-10-04: a registered local Obsidian vault exists and has readable/writable host permissions, but the Docker stack has no vault mount or implemented API/export connection. No vault write was attempted. Host availability does not establish container connectivity.
+
 The Docker application must provide a feature to export all collected data to Obsidian. The mechanism for delivering data to the vault has not been decided.
 
 Local testing must not assume a shared local filesystem will also exist after server migration. Options discussed include a vault accessible to the server or an Obsidian plugin that retrieves records and writes them into a local vault. Neither option is approved yet.
