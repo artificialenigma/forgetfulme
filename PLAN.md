@@ -70,6 +70,12 @@ The companion has local-only ports 8766 and 6080, its own internet-enabled netwo
 
 ## Open decisions
 
+### Optional MinerU parsing service
+
+Reviewed MinerU 4 and added `compose.mineru.yaml` as an optional NVIDIA-server deployment template with the `mineru` profile. It provides the V1 API, GPU selection, local pre-downloaded models, a private worker/parser network, read-only captured-content access, and persistent workspace. The worker endpoint setting is prepared; parsing jobs, result retrieval, and vault exports are not implemented.
+
+The current Docker engine is ARM64 on macOS and cannot run the documented NVIDIA deployment. Official MinerU 4 non-NVIDIA Docker guidance is pending. Configuration validation passed, but no MinerU image was built or started here and no inference was tested. A compatible GPU server or separately validated native macOS/CPU setup must be selected before runtime deployment. Suggested workflow: Archive Desk PDF/uploaded document → MinerU Markdown/assets → worker → stack-owned Obsidian vault.
+
 - Which operating systems and device types must Chrome and Safari support?
 - Should plugins import existing browser history, collect new visits, or both?
 - Should the archive contain history metadata only or saved page content as well?

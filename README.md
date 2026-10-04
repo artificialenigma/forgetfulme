@@ -96,6 +96,25 @@ Both added ports always bind to loopback. The browser view has no separate passw
 
 Use the same two `-f` arguments and `--profile archive` for subsequent Compose management of this companion. Server relocation requires its source checkout or a published image, plus its separate state backup. This first integration adds service lifecycle management only; shared archive records, dashboard export controls, and Obsidian attachment delivery remain future work.
 
+## Optional MinerU document processing
+
+`compose.mineru.yaml` is a deployment template for MinerU's V1 parsing API on a Linux server with a supported NVIDIA GPU and NVIDIA Container Toolkit. It is not running on this ARM64 Mac. The current [official Docker guide](https://opendatalab.github.io/MinerU/quick_start/docker_deployment/) targets NVIDIA; non-NVIDIA Docker guidance for MinerU 4 is still pending. Apple Silicon acceleration requires a native macOS installation, rather than this GPU container.
+
+MinerU can convert PDFs, scanned pages, and supported documents into Markdown/structured results. Its proposed role is **Archive Desk PDF or uploaded document → MinerU → reviewed Markdown/assets → Obsidian vault**. Its API is not a general URL crawler.
+
+On a compatible server, build the image from the upstream checkout following the official guide, verify the installed version, and set `MINERU_IMAGE` to your built/versioned image tag. The default `mineru:4` refers to a locally built image; this project does not provide it. Then enable the optional profile:
+
+```sh
+docker compose -f compose.yaml -f compose.mineru.yaml --profile mineru config --quiet
+docker compose -f compose.yaml -f compose.mineru.yaml --profile mineru up -d --wait
+```
+
+Add `-f compose.archive.yaml --profile archive` as well to manage Archive Desk in the same invocation. `MINERU_GPU_ID` selects the NVIDIA device; `MINERU_SHM_SIZE` defaults to 32 GB, so provision memory appropriately. Upstream image builds download models and use a CUDA/vLLM runtime that must match the server's GPU and driver. Model-file checks do not replace a real document parsing acceptance test.
+
+The API has no published host port. It uses a separate internal network joined by the worker, with the internal endpoint `http://mineru:8000/v1/health`. Captured files are available read-only at `/input`; `/workspace` has a separate persistent volume. The parser does not mount the Obsidian vault or the database. Pre-downloaded local models are required because this network has no internet egress. The worker's endpoint setting is prepared, but submission/polling, result downloads, and vault writing are not implemented yet. MinerU workspace files are not included in the current backup job; canonical exports should be stored through the worker in backed-up content/vault storage when that integration is built.
+
+Only Compose configuration was validated here. Image build, GPU inference, parsing quality, and end-to-end Obsidian export must be validated on compatible hardware. For local testing, a native macOS MinerU service or a separately tested CPU-only container is an alternative still to be selected.
+
 ## Project documentation
 
 - [Project plan](PLAN.md) — decisions and open questions.

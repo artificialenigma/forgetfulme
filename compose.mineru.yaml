@@ -1,0 +1,51 @@
+# Deployment template for a Linux host with a supported NVIDIA GPU/runtime.
+# Build and version-check the upstream MinerU 4 image before enabling this profile.
+services:
+  mineru:
+    profiles: [mineru]
+    image: ${MINERU_IMAGE:-mineru:4}
+    restart: unless-stopped
+    init: true
+    entrypoint: [mineru-kit]
+    command: [api-server, --host, 0.0.0.0, --port, '8000']
+    environment:
+      MINERU_MODEL_SOURCE: local
+      MINERU_MODEL_SMALL_BACKEND: torch
+      MINERU_MODEL_VLM_ENGINE: vllm
+    working_dir: /workspace
+    volumes:
+      - content_data:/input:ro
+      - mineru_workspace:/workspace
+    networks: [mineru]
+    shm_size: ${MINERU_SHM_SIZE:-32gb}
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['${MINERU_GPU_ID:-0}']
+              capabilities: [gpu]
+    healthcheck:
+      test: [CMD, python3, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/v1/health", timeout=5)']
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
+
+  worker:
+    networks: [backend, mineru]
+    environment:
+      MINERU_API_URL: http://mineru:8000
+
+networks:
+  mineru:
+    internal: true
+
+volumes:
+  mineru_workspace:

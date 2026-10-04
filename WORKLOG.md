@@ -250,3 +250,23 @@ Checked LinuxServer's Obsidian image and Selkies documentation for architecture 
 Sources: https://docs.linuxserver.io/images/docker-obsidian/ and https://docs.linuxserver.io/selkies/user-guide/configuration/.
 
 The initial lscr.io image pull stalled; retried with LinuxServer's Docker Hub mirror and successfully started Obsidian. The existing local vault was left untouched. Confirmed that the stack-owned vault is registered and Obsidian has initialized its workspace, and that the actual Obsidian process is running. All services are healthy. HTTP smoke tests passed for embedded desktop access, session protection, foreign-origin rejection, vault metadata, background jobs, backup archives, and a database restore. A vault backup was restored into a temporary directory successfully. A temporary connectivity note written by the worker was read by the Obsidian user, and then removed. Archive Desk smoke checks still pass. Direct visual browser verification remains unavailable because of the previously reported browser-policy restriction.
+
+Obsidian implementation pushed as `d06116b`.
+
+### 34. User — MinerU service
+
+> can this be added as a service https://github.com/opendatalab/mineru
+
+### 35. Assistant — MinerU deployment assessment and template
+
+> I’ll check MinerU’s deployment options and resource requirements, then assess how it could fit into this stack.
+
+Read the upstream repository, MinerU 4 Docker deployment/runtime documentation, Dockerfile, and Compose API configuration. MinerU is suitable for converting PDFs/scans and supported documents into Markdown and structured outputs. The official current Docker deployment uses NVIDIA/CUDA/vLLM; non-NVIDIA 4.x Docker guidance is pending. Confirmed this Docker engine is ARM64. This does not mean MinerU itself requires NVIDIA: native macOS and CPU runtimes exist, but the documented GPU container is not appropriate for this host.
+
+> MinerU would fit as a document-processing service: it can turn PDFs, scans, and saved documents into Markdown for the vault. Its current official Docker deployment targets Linux with NVIDIA GPUs, while this Docker engine is ARM64.
+>
+> I’ll add an optional deployment configuration for a compatible server. I won’t start that GPU configuration on this machine. Local CPU testing would need a separately validated setup.
+
+Added an opt-in NVIDIA deployment template with a private worker/parser network, V1 API health check, selected GPU, read-only content volume, separate workspace, and worker endpoint configuration. No parser host port, vault access, or database access is provided. Documented upstream image build/version checking, hardware/runtime requirements, local-model provisioning, and integration/backup limits. Both base+MinerU and base+Archive Desk+MinerU Compose configurations validated successfully. The image was not built or started and no parsing inference was tested; existing running services were left unchanged. Worker submission/result retrieval and automatic vault export remain pending.
+
+Sources: https://github.com/opendatalab/MinerU, https://opendatalab.github.io/MinerU/quick_start/docker_deployment/, https://opendatalab.github.io/MinerU/usage/tiers/, and upstream docker/compose.yaml and docker/global/Dockerfile.
