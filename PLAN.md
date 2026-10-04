@@ -86,6 +86,7 @@ The user requested the Docker stack first. The initial implementation includes:
 - PostgreSQL with persistent storage and one-shot schema initialization.
 - FastAPI webapp/API foundation with an authenticated stack-status dashboard and public health endpoints.
 - Browser login uses an HTML form and signed eight-hour HttpOnly/SameSite session cookie, with CSRF checks and Secure cookies over HTTPS. Basic authentication remains available for API checks.
+- Dashboard presentation includes service and job summary cards, service health details, the latest eight maintenance jobs, a manual refresh link, responsive navigation/layout, and Maldives-time timestamps. It displays actual database records; browsing features remain marked as planned.
 - Database-backed job queue, worker, and scheduler executing periodic maintenance jobs with heartbeat checks.
 - Scheduled database/content backups, retention, retry behavior, and a smoke test that restores a dump into a disposable database.
 - Private generated local credentials, pinned Python dependencies, bounded logs, and startup health dependencies.

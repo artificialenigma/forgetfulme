@@ -6,7 +6,7 @@
         X-Content-Type-Options nosniff
         Referrer-Policy no-referrer
         X-Frame-Options DENY
-        Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; form-action 'self'"
+        Content-Security-Policy "default-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; form-action 'self'"
     }
     reverse_proxy web:8000
 }

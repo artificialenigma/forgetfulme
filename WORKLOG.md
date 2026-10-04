@@ -178,3 +178,25 @@ Fix pushed as `894e519`. The assistant reported the hostname fix, HTTP port 8080
 > I’ll replace the browser’s HTTP authentication prompt with a normal login page. The server checks passed, but the browser may be failing to display that prompt. I’ll keep the dashboard protected and test the login flow.
 
 Implemented a normal login page with username/password fields, CSRF validation, and signed expiring HttpOnly/SameSite session cookies. Secure cookies are enabled when Caddy forwards HTTPS. Anonymous dashboard requests redirect to login; API access remains protected, with Basic authentication retained for command-line checks. Added no-store response headers and a same-origin form-action policy. Browser authentication prompt failure is a hypothesis, not a directly verified cause: the earlier browser security-policy rejection prevents further browser inspection. Expanded HTTP smoke checks to exercise login, session access, invalid credentials/cookies, and missing CSRF tokens. Updated README and plan to match the implemented login flow.
+
+Login-flow smoke checks passed and the fix was pushed as `08ccb33`. The assistant provided the direct login link and explained that browser rendering remained unverified.
+
+### 25. User — login credentials
+
+> whats the username pass
+
+The assistant read the private local .env and supplied the existing login credentials directly to the user. The password is intentionally omitted from this version-controlled conversation log.
+
+### 26. User — improve dashboard presentation
+
+> looks good but the presentation of the data in the dashboard could be better
+
+### 27. Assistant — dashboard presentation update
+
+> I’ll improve the dashboard with clearer status cards, a service overview, and a more readable job summary, using the data the stack already provides. I’m applying the frontend design direction skill for this update.
+
+Chose a calm, compact operations dashboard with a dark green navigation rail, neutral background, clear typography, and restrained state badges. Added summary cards for connected services and queued/completed jobs; a service table distinguishing current web/database checks from worker/scheduler heartbeats; and the latest eight real maintenance jobs. Missing/stale background services show attention states. Times use Indian/Maldives (UTC+05:00). Added manual refresh, section navigation, accessible table headers, a skip link, keyboard focus styles, and responsive mobile layouts. Planned collection/Obsidian features remain visibly unavailable rather than displaying sample browsing data.
+
+> The dashboard now has summary cards, clearer service states, and a recent-job table. Timestamps use Maldives time, and the layout adapts for mobile. It also clearly marks browser collection and Obsidian delivery as planned features. I’m checking the rendered HTML, stylesheet, and existing login flow before pushing.
+
+Rebuilt the running Docker app and reloaded the proxy stylesheet policy. HTTP smoke checks passed for the login/dashboard, worker/scheduler, backups and restoration; the stylesheet endpoint returned successfully. Python syntax and Git whitespace checks passed. Direct browser visual verification remains unavailable due to the previously reported browser policy restriction.

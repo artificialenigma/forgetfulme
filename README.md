@@ -2,7 +2,7 @@
 
 A self-hosted browsing archive that will collect history from Chrome and Safari and export it to Obsidian.
 
-The initial Docker foundation includes Caddy, PostgreSQL, a Python/FastAPI webapp, a background worker, a scheduler, and scheduled backups. The dashboard shows database connectivity, service heartbeats, and scheduled maintenance jobs. Browser ingestion, history search, and Obsidian delivery are not implemented yet.
+The initial Docker foundation includes Caddy, PostgreSQL, a Python/FastAPI webapp, a background worker, a scheduler, and scheduled backups. The dashboard shows service summary cards, database connectivity, service heartbeats, and the latest eight maintenance jobs, with timestamps in Maldives time and a responsive layout. Use Refresh to fetch current data. Browser ingestion, history search, and Obsidian delivery are not implemented yet.
 
 ## Run locally
 
