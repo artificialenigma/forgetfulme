@@ -31,7 +31,7 @@ services:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-    networks: [edge, backend]
+    networks: [edge, backend, obsidian]
     depends_on:
       web: {condition: service_healthy}
     logging:
@@ -66,8 +66,11 @@ services:
 
   web:
     <<: *app
+    volumes:
+      - obsidian_vault:/vault:ro
     depends_on:
       migrate: {condition: service_completed_successfully}
+      vault-init: {condition: service_completed_successfully}
     healthcheck:
       test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health/ready", timeout=3)']
       interval: 10s
@@ -85,8 +88,10 @@ services:
       start_period: 15s
     volumes:
       - content_data:/data/content
+      - obsidian_vault:/vault
     depends_on:
       migrate: {condition: service_completed_successfully}
+      vault-init: {condition: service_completed_successfully}
 
   scheduler:
     <<: *app
@@ -99,6 +104,46 @@ services:
       start_period: 15s
     depends_on:
       migrate: {condition: service_completed_successfully}
+      vault-init: {condition: service_completed_successfully}
+
+  vault-init:
+    <<: *app
+    restart: 'no'
+    user: root
+    cap_add: [CHOWN, DAC_OVERRIDE]
+    command: [python, -m, app.init_vault]
+    volumes:
+      - obsidian_vault:/vault
+      - obsidian_config:/obsidian-config
+
+  obsidian:
+    image: linuxserver/obsidian:latest
+    restart: unless-stopped
+    environment:
+      PUID: '10001'
+      PGID: '10001'
+      TZ: Indian/Maldives
+      SUBFOLDER: /obsidian/
+      TITLE: Forgetful Me Vault
+      HARDEN_DESKTOP: 'true'
+      NO_GAMEPAD: 'true'
+      NO_WEBCAM: 'true'
+    volumes:
+      - obsidian_config:/config
+      - obsidian_vault:/vault
+    networks: [obsidian]
+    shm_size: 1gb
+    depends_on:
+      vault-init: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD-SHELL, 'curl -fsS http://127.0.0.1:3000/obsidian/ >/dev/null']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}
 
   backup:
     image: postgres:17-alpine
@@ -115,9 +160,12 @@ services:
       - ./scripts/backup.sh:/scripts/backup.sh:ro
       - ./backups:/backups
       - content_data:/data/content:ro
+      - obsidian_vault:/vault:ro
+      - obsidian_config:/obsidian-config:ro
     networks: [backend]
     depends_on:
       migrate: {condition: service_completed_successfully}
+      vault-init: {condition: service_completed_successfully}
     healthcheck:
       test: [CMD-SHELL, 'test -f /backups/last-success && test $$(( $$(date +%s) - $$(cat /backups/last-success) )) -lt $$(( BACKUP_INTERVAL_SECONDS + 300 ))']
       interval: 10s
@@ -129,6 +177,7 @@ services:
 
 networks:
   edge:
+  obsidian:
   backend:
     internal: true
 
@@ -137,3 +186,5 @@ volumes:
   content_data:
   caddy_data:
   caddy_config:
+  obsidian_vault:
+  obsidian_config:

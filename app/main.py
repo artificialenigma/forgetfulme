@@ -79,6 +79,30 @@ def live():
     return {"status": "ok"}
 
 
+@app.get("/internal/desktop-auth")
+def desktop_auth(request: Request, credentials: Annotated[HTTPBasicCredentials | None, Depends(security)]):
+    if not authorized(request, credentials):
+        return RedirectResponse("/login", status_code=303)
+    origin = request.headers.get("origin")
+    scheme = request.headers.get("x-forwarded-proto", "http")
+    if origin and origin != f'{scheme}://{request.headers.get("host")}':
+        raise HTTPException(403, "Desktop requests must come from this app")
+    return {"authenticated": True}
+
+
+@app.get("/vault", response_class=HTMLResponse)
+def vault_desktop(request: Request, credentials: Annotated[HTTPBasicCredentials | None, Depends(security)]):
+    if not authorized(request, credentials):
+        return RedirectResponse("/login", status_code=303)
+    return '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vault · Forgetful Me</title><style>body{margin:0;font:14px system-ui;background:#172d29;color:white}header{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px}a{color:#c7ddaa}iframe{display:block;width:100%;height:calc(100dvh - 56px);border:0;background:#202020}</style></head><body><header><a href="/">← Dashboard</a><strong>Forgetful Me Vault</strong><a href="/obsidian/" target="_blank" rel="noopener">Open desktop in a tab ↗</a></header><iframe src="/obsidian/" title="Obsidian vault desktop" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen></iframe></body></html>'''
+
+
+@app.get("/api/vault", dependencies=[Depends(authenticate)])
+def vault_status():
+    vault = Path("/vault")
+    return {"mounted": vault.is_dir(), "name": "Forgetful Me", "markdown_files": sum(1 for p in vault.rglob("*.md") if ".obsidian" not in p.parts), "desktop_url": "/vault"}
+
+
 @app.get("/health/ready")
 def ready():
     try:

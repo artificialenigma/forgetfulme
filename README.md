@@ -21,10 +21,21 @@ Local `SITE_ADDRESS=:80` accepts both `localhost` and `127.0.0.1`. Use HTTP on p
 docker compose ps
 docker compose logs --tail=100 web worker scheduler backup
 python3 scripts/smoke_test.py
+python3 scripts/vault_smoke_test.py
 docker compose down
 ```
 
 `down` preserves named volumes. `down -v` deletes database and content volumes and should only be used when deliberately resetting the archive.
+
+## Obsidian inside Forgetful Me
+
+Open the dashboard's **Obsidian vault** link, or visit [the vault workspace](http://localhost:8080/vault). Obsidian runs in a LinuxServer container and streams its desktop through `/obsidian/`, embedded in the app. The app login protects the desktop HTTP routes and WebSocket upgrades; the Obsidian container publishes no host ports. Localhost works for local testing; remote access requires HTTPS because the desktop uses browser secure-context features. This is a containerized desktop, not an official Obsidian web edition. See [LinuxServer's image documentation](https://docs.linuxserver.io/images/docker-obsidian/).
+
+The new **Forgetful Me** vault lives at `/vault` in the `obsidian_vault` named volume. It includes a welcome note and is registered for opening on first start. Settings persist in `obsidian_config`. Your existing macOS vault is not mounted, copied, or changed. Obsidian and the worker share the new vault; the webapp mounts it read-only. Automatic browsing-history exports remain future work.
+
+Both the vault and Obsidian settings are included in scheduled backups as `vault.tar.gz` and `obsidian-config.tar.gz`. They must be restored along with the database/content archives when moving servers. For consistent recovery, stop Obsidian and other writers before restoring, then extract each archive into its corresponding empty volume and retain UID/GID 10001 ownership. Live backups are sequential rather than atomic; stop writers before a final migration backup. `docker compose down -v` deletes the vault and settings as well as database/content volumes.
+
+The streamed desktop is shared by this single-user stack. Do not treat it as a separate per-user vault. Desktop hardening is enabled, and the container has no Docker socket, host vault, or privileged host access. An authenticated user still has access to the container desktop and its new vault.
 
 ## Storage and background jobs
 
@@ -34,19 +45,19 @@ The database-backed queue does not need Redis. Additional job types and schema m
 
 ## Backups and restore
 
-The backup service creates a PostgreSQL custom-format dump and compressed content archive at startup and every 24 hours. Completed backups are written to `./backups/<UTC timestamp>/`; partial backups are not published. The default retention is 14 days. Failures retry after 60 seconds. Dump readability is checked during backup, and the smoke test performs an actual restore into a disposable database.
+The backup service creates a PostgreSQL custom-format dump and compressed content, vault, and Obsidian settings archives at startup and every 24 hours. Completed backups are written to `./backups/<UTC timestamp>/`; partial backups are not published. The default retention is 14 days. Failures retry after 60 seconds. Dump readability is checked during backup, and the smoke test performs an actual restore into a disposable database.
 
 Copy backups to a separate device or storage service: backups on the same server do not protect against losing that server. Database and file captures are sequential; once content writes are implemented, coordinated snapshots will be needed for strict cross-storage consistency.
 
 For a database recovery, stop writers and choose a verified backup directory:
 
 ```sh
-docker compose stop web worker scheduler
+docker compose stop obsidian web worker scheduler
 # Replace TIMESTAMP with the chosen directory. This replaces database contents.
 docker compose exec backup pg_restore --exit-on-error --clean --if-exists --no-owner --dbname=forgetfulme /backups/TIMESTAMP/database.dump
 # Restore captured files into the volume through the worker image.
 docker compose run --rm --no-deps --user root -v ./backups:/restore:ro worker sh -c 'tar -xzf /restore/TIMESTAMP/content.tar.gz -C /data/content && chown -R app:app /data/content'
-docker compose start web worker scheduler
+docker compose start obsidian web worker scheduler
 ```
 
 Restore into empty content storage for an exact recovery; extracting an archive alone does not remove newer files. Keep a pre-recovery backup. Migration to another machine requires the database and content backups plus `.env`, not just the Git checkout.

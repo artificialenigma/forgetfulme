@@ -234,3 +234,19 @@ Archive Desk integration pushed as `70e525b`.
 > I’ll check whether the stack has an Obsidian connection configured and whether a local vault is available.
 
 Read-only checks found an open local vault registered with Obsidian. The vault and its .obsidian directory exist, and host permissions permit reads and writes. No community-plugin list was found. Inspected application code, Compose settings, and running web/worker mounts: there is no implemented Obsidian integration, vault mount, or configured Obsidian API connection. The worker only mounts the internal captured-content volume. Conclusion: the local vault is available but is not connected to Forgetful Me. No vault files were changed, and no write/export test was performed. The private absolute vault location is omitted from this published log.
+
+Connectivity findings pushed as `f4a6bd4`.
+
+### 32. User — host Obsidian and vault inside the stack
+
+> can you add obsidian to the docker stack so its running inside the app and the vault is inside the app
+
+### 33. Assistant — containerized Obsidian implementation
+
+> I’ll check a containerized Obsidian option and add it with a vault stored in the stack. I’ll use a new vault and leave your existing local vault untouched.
+
+Checked LinuxServer's Obsidian image and Selkies documentation for architecture support, subfolder proxying, secure contexts, and desktop hardening. Added a containerized Obsidian desktop with /obsidian/ routing guarded by the app's signed session or API authentication, origin checks, and no host port. Added an embedded /vault page and sidebar link, a dedicated named-volume vault shared with the worker, read-only web mount, persistent settings, and initialization of a welcome note and vault registry. The existing local vault is not mounted or copied. Backup archives now include vault and desktop settings; automatic browsing/book note export remains future work.
+
+Sources: https://docs.linuxserver.io/images/docker-obsidian/ and https://docs.linuxserver.io/selkies/user-guide/configuration/.
+
+The initial lscr.io image pull stalled; retried with LinuxServer's Docker Hub mirror and successfully started Obsidian. The existing local vault was left untouched. Confirmed that the stack-owned vault is registered and Obsidian has initialized its workspace, and that the actual Obsidian process is running. All services are healthy. HTTP smoke tests passed for embedded desktop access, session protection, foreign-origin rejection, vault metadata, background jobs, backup archives, and a database restore. A vault backup was restored into a temporary directory successfully. A temporary connectivity note written by the worker was read by the Obsidian user, and then removed. Archive Desk smoke checks still pass. Direct visual browser verification remains unavailable because of the previously reported browser-policy restriction.

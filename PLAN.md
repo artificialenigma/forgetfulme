@@ -23,13 +23,13 @@ The initial Docker implementation uses Caddy, PostgreSQL 17, and Python/FastAPI.
 - After local testing, the Docker stack moves to a server, where it will reside permanently.
 - The final design must support browser data arriving from multiple devices at that server.
 
-## Obsidian integration — requirement confirmed, transport pending
+## Obsidian integration — stack-owned vault
 
 Connectivity check on 2026-10-04: a registered local Obsidian vault exists and has readable/writable host permissions, but the Docker stack has no vault mount or implemented API/export connection. No vault write was attempted. Host availability does not establish container connectivity.
 
-The Docker application must provide a feature to export all collected data to Obsidian. The mechanism for delivering data to the vault has not been decided.
+The Docker application must provide a feature to export all collected data to Obsidian. The user requested Obsidian inside the stack with its vault inside the application. The implementation adds a LinuxServer Obsidian desktop behind the app login at /obsidian/, embedded at /vault, with no directly published desktop port. A new named-volume vault is shared with the worker and mounted read-only by the webapp; settings use a separate volume. Initialization creates a welcome note and registers the new vault without modifying or importing the user's existing local vault. Both volumes are included in scheduled backups. Automatic history and Archive Desk exports remain pending.
 
-Local testing must not assume a shared local filesystem will also exist after server migration. Options discussed include a vault accessible to the server or an Obsidian plugin that retrieves records and writes them into a local vault. Neither option is approved yet.
+The stack-owned vault and settings can move with the server through backup/restore. Remote desktop use requires HTTPS; local HTTP works at localhost. Synchronization with a separate local Obsidian installation has not been selected.
 
 ## Proposed details awaiting agreement
 
@@ -73,7 +73,7 @@ The companion has local-only ports 8766 and 6080, its own internet-enabled netwo
 - Which operating systems and device types must Chrome and Safari support?
 - Should plugins import existing browser history, collect new visits, or both?
 - Should the archive contain history metadata only or saved page content as well?
-- How will the server deliver data to the Obsidian vault?
+- How should browsing records and Archive Desk exports be formatted and delivered into the shared stack-owned vault?
 - What Markdown structure should exports use, and should export be manual, automatic, or both?
 - What authentication, retention, and exclusion rules are required?
 - What server environment will host the production deployment?

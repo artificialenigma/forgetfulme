@@ -11,7 +11,7 @@ while :; do
     stamp=$(date -u +%Y%m%dT%H%M%SZ)
     staging="/backups/.pending-$stamp"
     mkdir "$staging"
-    if pg_dump --format=custom --file="$staging/database.dump" && tar -czf "$staging/content.tar.gz" -C /data/content . && pg_restore --list "$staging/database.dump" >/dev/null; then
+    if pg_dump --format=custom --file="$staging/database.dump" && tar -czf "$staging/content.tar.gz" -C /data/content . && tar -czf "$staging/vault.tar.gz" -C /vault . && tar -czf "$staging/obsidian-config.tar.gz" -C /obsidian-config . && pg_restore --list "$staging/database.dump" >/dev/null; then
         mv "$staging" "/backups/$stamp"
         date -u +%s > /backups/last-success
         find /backups -mindepth 1 -maxdepth 1 -type d ! -name '.pending-*' -mtime +"$retention" -exec rm -rf {} +

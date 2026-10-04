@@ -5,8 +5,26 @@
     header {
         X-Content-Type-Options nosniff
         Referrer-Policy no-referrer
-        X-Frame-Options DENY
-        Content-Security-Policy "default-src 'none'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; form-action 'self'"
     }
-    reverse_proxy web:8000
+    redir /obsidian /obsidian/ 308
+    handle /obsidian/* {
+        forward_auth web:8000 {
+            uri /internal/desktop-auth
+        }
+        header {
+            X-Frame-Options SAMEORIGIN
+            Content-Security-Policy "frame-ancestors 'self'"
+        }
+        reverse_proxy obsidian:3000 {
+            header_down -X-Frame-Options
+            header_down -Content-Security-Policy
+        }
+    }
+    handle {
+        header {
+            X-Frame-Options DENY
+            Content-Security-Policy "default-src 'none'; style-src 'self' 'unsafe-inline'; frame-src 'self'; frame-ancestors 'none'; form-action 'self'"
+        }
+        reverse_proxy web:8000
+    }
 }

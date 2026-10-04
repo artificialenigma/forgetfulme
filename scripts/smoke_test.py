@@ -46,6 +46,21 @@ assert session.has_nonstandard_attr('HttpOnly')
 assert session.get_nonstandard_attr('SameSite') == 'strict'
 with browser.open(base + '/api/status') as response:
     assert 'services' in json.loads(response.read())
+with browser.open(base + '/vault') as response:
+    assert b'Obsidian vault desktop' in response.read()
+with browser.open(base + '/api/vault') as response:
+    vault = json.loads(response.read())
+    assert vault['mounted'] and vault['markdown_files'] >= 1
+with browser.open(base + '/obsidian/') as response:
+    assert response.status == 200
+    assert b'<html' in response.read().lower()
+assert b'Username' in get('/obsidian/')
+try:
+    browser.open(urllib.request.Request(base + '/obsidian/', headers={'Origin': 'https://foreign.invalid'}))
+except urllib.error.HTTPError as error:
+    assert error.code == 403
+else:
+    raise AssertionError('Desktop accepted a foreign Origin')
 try:
     browser.open(base + '/login', data=urllib.parse.urlencode({'username': env['ADMIN_USER'], 'password': env['ADMIN_PASSWORD']}).encode())
 except urllib.error.HTTPError as error:
@@ -79,10 +94,12 @@ restore = '''set -eu
 latest=$(find /backups -mindepth 1 -maxdepth 1 -type d ! -name '.pending-*' | sort | tail -n 1)
 test -n "$latest"
 tar -tzf "$latest/content.tar.gz" >/dev/null
+tar -tzf "$latest/vault.tar.gz" | grep -q Welcome.md
+tar -tzf "$latest/obsidian-config.tar.gz" >/dev/null
 createdb forgetfulme_restore_test
 trap 'dropdb --if-exists forgetfulme_restore_test' EXIT
 pg_restore --exit-on-error --no-owner --dbname=forgetfulme_restore_test "$latest/database.dump"
 psql --dbname=forgetfulme_restore_test -v ON_ERROR_STOP=1 -c 'SELECT count(*) FROM jobs; SELECT count(*) FROM service_status;'
 '''
 subprocess.run(['docker', 'compose', 'exec', '-T', 'backup', 'sh', '-c', restore], cwd=root, check=True)
-print('PASS: readiness, authentication, dashboard, scheduler, worker, backup archive, and database restore')
+print('PASS: readiness, authentication, dashboard, vault/desktop access, scheduler, worker, backup archives, and database restore')
