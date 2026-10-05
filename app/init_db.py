@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS browser_visits (
  url text NOT NULL, title text NOT NULL, visited_at timestamptz NOT NULL,
  received_at timestamptz NOT NULL DEFAULT now(), UNIQUE(device_id,event_id)
 );
+ALTER TABLE browser_visits ADD COLUMN IF NOT EXISTS obsidian_exported_at timestamptz;
+CREATE INDEX IF NOT EXISTS browser_visits_export_pending ON browser_visits(id) WHERE obsidian_exported_at IS NULL;
 CREATE INDEX IF NOT EXISTS browser_visits_time ON browser_visits(visited_at DESC);
 """
 

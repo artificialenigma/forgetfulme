@@ -28,6 +28,11 @@ if __name__ == "__main__":
     while True:
         try:
             tick(role)
+            if role == "worker":
+                from app.obsidian_export import export_pending
+                count = export_pending()
+                if count:
+                    logging.info("Exported %s visits to Obsidian", count)
         except Exception:
             logging.exception("Job loop failed; retrying")
         time.sleep(10)

@@ -143,3 +143,7 @@ Add an explicit checkbox (checked by default) allowing invalid Safari records to
 ## History presentation — 2026-10-05
 
 Use a dedicated responsive history page, bounded title/URL text, named sources, Maldives timestamps and stable 50-entry pagination. Mobile layout prioritizes page and visit time; desktop shows source as well.
+
+## Obsidian delivery — 2026-10-05
+
+Worker exports pending visits every ten seconds, at most eight date/ID groups per pass. Each note holds at most 1,000 visits, contains escaped Markdown title/link, timestamp and source, and resides in the managed Forgetful Me/Browsing History/YYYY/MM folder. Atomic note replacement precedes exported_at updates in a transaction; failures retry. Existing visits are backfilled automatically. History page and API expose exported/pending totals. Personal annotations belong outside managed files.

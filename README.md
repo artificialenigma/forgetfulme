@@ -135,3 +135,7 @@ Safari history JSON exports are also accepted: `metadata.browser_name="Safari"`,
 Safari exports can contain entries that the archive cannot accept, such as non-HTTP(S) pages or invalid timestamps. The import form defaults to **Skip unsupported or invalid Safari entries and report them**: valid entries are saved, and the result shows the skipped count and first 20 entry numbers/reasons without displaying their URLs. Uncheck the option to reject the entire file on any invalid entry. CSV/generic JSON imports remain strict. An export with no valid entries saves nothing.
 
 Browsing history now uses a responsive page with 50 entries per page, previous/next navigation, bounded titles and URLs, and Maldives timestamps (UTC+05:00). This replaces the earlier latest-200-only view. Hover over shortened text for the full value.
+
+### Automatic Obsidian delivery
+
+The worker now exports existing and newly collected/imported history to `Forgetful Me/Browsing History/YYYY/MM` in the shared vault. Each managed Markdown file groups a day’s visits in chunks of at most 1,000 and includes links, titles, times and sources. The worker processes bounded batches every ten seconds; a large backlog takes time. Refresh Browsing history to see exported/pending counts, then open the Obsidian vault from the app. Managed notes may be rebuilt on new data/retry; keep annotations in separate notes. Exported content is visit metadata, not scraped page bodies. Database and vault backups already cover this data.

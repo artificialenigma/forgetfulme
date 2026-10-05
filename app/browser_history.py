@@ -122,11 +122,12 @@ def ingest(batch: Batch, request: Request):
 def history(page_number: int = Query(1, alias="page", ge=1, le=1_000_000)):
     from app.history_view import render_history
     with connect() as db:
-        count = db.execute('SELECT count(*) AS n FROM browser_visits').fetchone()['n']
+        stats = db.execute('SELECT count(*) AS n,count(*) FILTER (WHERE obsidian_exported_at IS NULL) AS pending FROM browser_visits').fetchone()
+        count = stats['n']
         pages = max(1, (count + 49) // 50)
         current = min(page_number, pages)
         rows = db.execute('SELECT v.url,v.title,v.visited_at,d.name FROM browser_visits v JOIN browser_devices d ON d.id=v.device_id ORDER BY visited_at DESC,v.id DESC LIMIT 50 OFFSET %s', ((current-1)*50,)).fetchall()
-    return HTMLResponse(render_history(rows, count, current, pages))
+    return HTMLResponse(render_history(rows, count, current, pages, stats['pending']))
 
 
 @router.get('/history/import', dependencies=[Depends(admin)])

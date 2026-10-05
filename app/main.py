@@ -106,7 +106,9 @@ def vault_desktop(request: Request, credentials: Annotated[HTTPBasicCredentials 
 @app.get("/api/vault", dependencies=[Depends(authenticate)])
 def vault_status():
     vault = Path("/vault")
-    return {"mounted": vault.is_dir(), "name": "Forgetful Me", "markdown_files": sum(1 for p in vault.rglob("*.md") if ".obsidian" not in p.parts), "desktop_url": "/vault"}
+    with connect() as db:
+        progress = db.execute('SELECT count(*) FILTER (WHERE obsidian_exported_at IS NULL) AS pending, count(*) FILTER (WHERE obsidian_exported_at IS NOT NULL) AS exported FROM browser_visits').fetchone()
+    return {"history_export": progress, "history_folder": "Forgetful Me/Browsing History", "mounted": vault.is_dir(), "name": "Forgetful Me", "markdown_files": sum(1 for p in vault.rglob("*.md") if ".obsidian" not in p.parts), "desktop_url": "/vault"}
 
 
 @app.get("/health/ready")
