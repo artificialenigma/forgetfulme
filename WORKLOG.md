@@ -318,3 +318,9 @@ Validation: rebuilt Docker and confirmed healthy services. Import smoke tests pa
 User reported Safari entry 382 failing the generic validation message. Its actual contents were not available, so no specific cause was assumed. Added field-specific diagnostics and an explicit Safari skip-invalid checkbox checked by default. Accepted entries are saved while skipped counts and first 20 entry numbers/reasons are shown; URLs are not included in the report. Unchecked strict mode and generic imports still reject invalid files atomically. All-invalid exports save nothing. Added mixed valid/non-HTTP/invalid-time Safari tests, strict rejection and retry deduplication.
 
 Validation: Docker core services healthy. Import smoke suite passed for mixed Safari entries, skipped-count/field reports without URLs, strict rejection, all-invalid rejection, deduplicated retry, 10,001-entry bulk import, >6 MiB upload and existing authentication/format checks. Synthetic fixtures deleted.
+
+## 2026-10-05 — Browsing history UI repair
+
+User reported incorrect display in Browsing history. Source inspection found an unconstrained plain table with repeated long URL text and latest-200-only results. Added a dedicated responsive history layout with consistent workspace navigation, fixed column widths, ellipsis for long titles/URLs (full text via hover), hostname fallback for missing Safari titles, mobile layout, Maldives timestamps and 50-entry pagination with stable ordering. No direct visual inspection of the signed-in browser was available; validation uses rendering and HTTP checks.
+
+Validation: Docker services healthy. Synthetic import/ingestion suite passed, including authenticated history rendering, 50-row first/second pages, pagination links and timezone labels. Browser visual verification remains pending. Synthetic fixtures removed.

@@ -4,7 +4,7 @@ import secrets
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlsplit
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field, field_validator
@@ -119,14 +119,14 @@ def ingest(batch: Batch, request: Request):
 
 
 @router.get('/history', dependencies=[Depends(admin)])
-def history():
+def history(page_number: int = Query(1, alias="page", ge=1, le=1_000_000)):
+    from app.history_view import render_history
     with connect() as db:
-        rows = db.execute('SELECT v.url,v.title,v.visited_at,d.name FROM browser_visits v JOIN browser_devices d ON d.id=v.device_id ORDER BY visited_at DESC LIMIT 200').fetchall()
         count = db.execute('SELECT count(*) AS n FROM browser_visits').fetchone()['n']
-    body = f'<h1>Browsing history</h1><p>{count:,} visits stored · showing the latest 200</p><table><tr><th>Page</th><th>Device</th><th>Visited (UTC)</th></tr>'
-    for row in rows:
-        body += f'<tr><td><a target="_blank" rel="noopener noreferrer" href="{html.escape(row["url"], quote=True)}">{html.escape(row["title"] or row["url"])}</a><br><small>{html.escape(row["url"])}</small></td><td>{html.escape(row["name"])}</td><td>{row["visited_at"].astimezone(timezone.utc).strftime("%d %b %Y %H:%M:%S")}</td></tr>'
-    return page(body + '</table>' + ('<p>No visits yet. <a href="/devices">Connect a browser</a>.</p>' if not rows else ''))
+        pages = max(1, (count + 49) // 50)
+        current = min(page_number, pages)
+        rows = db.execute('SELECT v.url,v.title,v.visited_at,d.name FROM browser_visits v JOIN browser_devices d ON d.id=v.device_id ORDER BY visited_at DESC,v.id DESC LIMIT 50 OFFSET %s', ((current-1)*50,)).fetchall()
+    return HTMLResponse(render_history(rows, count, current, pages))
 
 
 @router.get('/history/import', dependencies=[Depends(admin)])

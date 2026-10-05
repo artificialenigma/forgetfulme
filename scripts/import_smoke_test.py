@@ -55,6 +55,12 @@ try:
     large = {'metadata': {'browser_name':'Safari','data_type':'history','schema_version':1}, 'history':[{'url':f'https://example.com/large-safari/{i}','time_usec':1774258180789274+i} for i in range(10001)]}
     assert '10,001 visits imported' in upload(json.dumps(large).encode(),'History.json')
     assert '10,001 duplicates skipped' in upload(json.dumps(large).encode(),'History.json')
+    first_page = read('/history')
+    second_page = read('/history?page=2')
+    assert first_page.count('<tr>') == 51 and second_page.count('<tr>') == 51
+    assert 'Page 2 of' in second_page and 'UTC+05:00' in second_page
+    assert 'href="/history?page=2"' in first_page
+    assert 'history.css' in first_page and first_page != second_page
     assert 'The file contains no history entries' in upload(b'{"visits": []}','history.json')
     bad = b'url,title,visited_at\nhttps://example.com/must-not-save,Good,2026-01-02T12:00:00Z\njavascript:alert(1),Bad,2026-01-02T12:00:00Z\n'
     assert 'No visits were saved' in upload(bad)

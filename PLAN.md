@@ -139,3 +139,7 @@ Raise the file import entry limit to 1,000,000 while retaining the 100 MiB byte 
 ## Safari invalid entries — 2026-10-05
 
 Add an explicit checkbox (checked by default) allowing invalid Safari records to be skipped. Return exact invalid-field reasons, a skipped count and first 20 entry numbers without exposing URLs. Strict mode rejects the entire export; CSV/generic JSON remain strict. Validate all records before a single atomic save of accepted visits. Reject files without any valid visits.
+
+## History presentation — 2026-10-05
+
+Use a dedicated responsive history page, bounded title/URL text, named sources, Maldives timestamps and stable 50-entry pagination. Mobile layout prioritizes page and visit time; desktop shows source as well.
