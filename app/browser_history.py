@@ -15,7 +15,9 @@ router = APIRouter()
 
 def admin(request: Request):
     if not session_valid(request.cookies.get(COOKIE)):
-        raise HTTPException(401, "Sign in to manage browser devices")
+        if request.method == "GET":
+            raise HTTPException(303, "Sign in required", headers={"Location": "/login?next=" + request.url.path})
+        raise HTTPException(401, "Sign in to continue")
 
 
 def page(body):

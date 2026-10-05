@@ -41,12 +41,9 @@ try:
         assert error.code == 403
     else:
         raise AssertionError('Invalid CSRF accepted')
-    try:
-        urllib.request.urlopen(base+'/history/import',timeout=10)
-    except urllib.error.HTTPError as error:
-        assert error.code == 401
-    else:
-        raise AssertionError('Unauthenticated import allowed')
+    with urllib.request.urlopen(base+'/history/import', timeout=10) as response:
+        assert '/login?next=/history/import' in response.url
+        assert b'Sign in' in response.read()
     print('CSV/JSON upload, repeat/timezone deduplication, atomic validation, malformed input, CSRF and authentication passed')
 finally:
     subprocess.run(['docker','compose','exec','-T','db','psql','-U','forgetfulme','-d','forgetfulme','-c',f"DELETE FROM browser_visits WHERE device_id='{device_id}'; DELETE FROM browser_devices WHERE id='{device_id}';"],check=True,stdout=subprocess.DEVNULL)

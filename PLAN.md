@@ -119,3 +119,7 @@ The Docker stack is implemented. Browser extensions, history ingestion/search, p
 ## File import — 2026-10-05
 
 Add a signed-in Import history page accepting explicit CSV/JSON uploads (UTF-8, url/title/visited_at fields). Bound files to 4 MiB and 10,000 rows, validate all rows before the database transaction, and reject invalid URLs/timestamps. Named import sources use deterministic IDs and cannot authenticate ingestion; hash normalized UTC timestamp plus URL for repeat-import deduplication within that source. Show inserted/skipped counts and link to history. Browser database and vendor-specific export parsing are outside this import format; Chrome’s add-on importer remains available. Overlap with extension event identities can produce duplicates.
+
+## Browser sign-in navigation — 2026-10-05
+
+Protected browser pages redirect missing/invalid sessions to login and carry an allowlisted return destination. Protected mutations continue rejecting unauthenticated requests. Use a consistent hostname for the app and login because cookies are host-scoped.

@@ -284,3 +284,9 @@ Rebuilt Docker stack successfully. Synthetic tests passed for pairing, ingestion
 User request: “can you create a import function to bring in browsing data”. Added an Import history page reachable from dashboard, Devices and History, accepting user-selected UTF-8 CSV/JSON exports. Added named import sources, repeat-import deduplication using URL and normalized UTC timestamp, complete-file validation before saving, upload/row limits, authenticated session/CSRF checks and import outcome counts. Included sample files and documented formats and boundaries. No local personal browser files were accessed or imported.
 
 Validation: rebuilt the Docker stack with all core services healthy. Import smoke tests passed for CSV/JSON uploads, repeat imports, equivalent timezone offsets, invalid-row atomicity, malformed JSON, missing timezone, invalid CSRF and unauthenticated access. Existing history-ingestion smoke tests also passed. Synthetic fixtures were deleted. Changes committed and pushed to the existing main branch.
+
+## 2026-10-05 — Import sign-in navigation fix
+
+User reported `{"detail":"Sign in to manage browser devices"}` when opening history import in the Docker app. The browser-page dependency returned an API-style 401 for a missing session. Changed signed-out GET navigation for Devices, History and Import to redirect to login; successful login returns to the requested page. Return destinations are restricted to known local pages. POST operations still require a valid session; no authentication checks were removed. Cookie sessions are scoped to the hostname, so localhost and 127.0.0.1 do not share login state. Rebuilt the running Docker app.
+
+Validation passed: missing/invalid session redirects, successful login returning to import, rejection of external redirect destinations, full import/ingestion synthetic checks, and existing stack smoke tests including backup restore. Synthetic data removed. Committed and pushed the navigation fix.
