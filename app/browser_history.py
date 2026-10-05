@@ -1,5 +1,8 @@
 import hashlib
 import html
+import re
+from zoneinfo import ZoneInfo
+from app.layout import render_page
 import secrets
 import uuid
 from datetime import datetime, timezone
@@ -22,7 +25,13 @@ def admin(request: Request):
 
 
 def page(body):
-    return HTMLResponse('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Browser history · Forgetful Me</title><style>body{font:16px system-ui;max-width:1100px;margin:40px auto;padding:20px;background:#f7f5ef;color:#253831}a{color:#24644e}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:12px;border-bottom:1px solid #ddd;overflow-wrap:anywhere}input,button{padding:10px;font:inherit}code{overflow-wrap:anywhere}small{color:#52645c}</style><a href="/">← Dashboard</a> · <a href="/devices">Devices</a> · <a href="/history">History</a> · <a href="/history/import">Import history</a>' + body + '</html>')
+    heading = re.search(r'<h1>(.*?)</h1>', body)
+    title = html.unescape(heading.group(1)) if heading else 'Your archive'
+    if heading:
+        body = body[:heading.start()] + body[heading.end():]
+    active = '/history/capture' if title == 'Page scraping' else '/devices' if title in {'Browser devices','Device created'} else '/history/import'
+    body = body.replace('<table>', '<div class="table-scroll"><table>').replace('</table>', '</table></div>')
+    return HTMLResponse(render_page('<section class="panel content-panel">' + body + '</section>', title, active))
 
 
 def csrf(request):
@@ -45,10 +54,10 @@ def devices(request: Request):
         rows = db.execute("SELECT id,name,last_seen,revoked FROM browser_devices ORDER BY created_at DESC").fetchall()
     token = csrf(request)
     body = '<h1>Browser devices</h1><p>Create a separate token for each browser. Install the add-on from the extensions/chrome folder, then enter this app’s address and the token in its settings.</p>'
-    body += f'<form method="post"><input name="csrf" type="hidden" value="{token}"><input name="name" placeholder="Laptop Chrome" required maxlength="100"><button>Add device</button></form><table><tr><th>Device</th><th>Last received</th><th>Access</th></tr>'
+    body += f'<form method="post"><input name="csrf" type="hidden" value="{token}"><input name="name" placeholder="Laptop Chrome" required maxlength="100"><button>Add device</button></form><table><tr><th>Device</th><th>Last received · UTC+05:00</th><th>Access</th></tr>'
     for row in rows:
         action = 'Revoked' if row['revoked'] else f'<form method="post" action="/devices/{row["id"]}/revoke"><input type="hidden" name="csrf" value="{token}"><button>Revoke</button></form>'
-        body += f'<tr><td>{html.escape(row["name"])}</td><td>{html.escape(str(row["last_seen"] or "Waiting for visits"))}</td><td>{action}</td></tr>'
+        body += f'<tr><td>{html.escape(row["name"])}</td><td>{html.escape(row["last_seen"].astimezone(ZoneInfo("Indian/Maldives")).strftime("%d %b %Y, %H:%M:%S") if row["last_seen"] else "Waiting for visits")}</td><td>{action}</td></tr>'
     return page(body + '</table>')
 
 

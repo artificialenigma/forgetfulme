@@ -9,6 +9,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from app.dashboard import render
+from app.layout import render_page, render_login
 from app.db import connect
 from app.auth import COOKIE, TTL, credentials_valid, issue_session, session_valid
 
@@ -43,9 +44,7 @@ def login_destination(value):
 def login_page(error="", destination="/"):
     destination = login_destination(destination)
     csrf = secrets.token_hex(32)
-    page = f"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in · Forgetful Me</title>
-<style>body{{font:16px system-ui;background:#f7f5ef;color:#253831;margin:60px auto;padding:24px;max-width:440px}}form{{background:white;padding:28px;border-radius:12px}}label{{display:block;margin:16px 0 6px}}input{{box-sizing:border-box;width:100%;padding:12px;font:inherit;border:1px solid #a7b6ad;border-radius:6px}}button{{margin-top:24px;padding:12px 20px;background:#253831;color:white;border:0;border-radius:6px;font:inherit}}p{{line-height:1.6}}</style>
-<h1>Forgetful Me</h1><p>Sign in to your browsing archive.</p><form method="post" action="/login"><input type="hidden" name="csrf" value="{csrf}"><input type="hidden" name="next" value="{destination}"><p role="alert">{html.escape(error)}</p><label for="username">Username</label><input id="username" name="username" autocomplete="username" required maxlength="256"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required maxlength="1024"><button type="submit">Sign in</button></form><p>Use the credentials from your local .env file.</p></html>"""
+    page = render_login(f"""<h1>Forgetful Me</h1><p>Sign in to your browsing archive.</p><form method="post" action="/login"><input type="hidden" name="csrf" value="{csrf}"><input type="hidden" name="next" value="{destination}"><p role="alert">{html.escape(error)}</p><label for="username">Username</label><input id="username" name="username" autocomplete="username" required maxlength="256"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required maxlength="1024"><button type="submit">Sign in</button></form><p>Use the credentials from your local .env file.</p>""")
     response = HTMLResponse(page, status_code=401 if error else 200)
     response.set_cookie("forgetfulme_csrf", csrf, httponly=True, samesite="strict", max_age=600)
     response.headers["Cache-Control"] = "no-store"
@@ -100,7 +99,7 @@ def desktop_auth(request: Request, credentials: Annotated[HTTPBasicCredentials |
 def vault_desktop(request: Request, credentials: Annotated[HTTPBasicCredentials | None, Depends(security)]):
     if not authorized(request, credentials):
         return RedirectResponse("/login", status_code=303)
-    return '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vault · Forgetful Me</title><style>body{margin:0;font:14px system-ui;background:#172d29;color:white}header{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px}a{color:#c7ddaa}iframe{display:block;width:100%;height:calc(100dvh - 56px);border:0;background:#202020}</style></head><body><header><a href="/">← Dashboard</a><strong>Forgetful Me Vault</strong><a href="/obsidian/" target="_blank" rel="noopener">Open desktop in a tab ↗</a></header><iframe src="/obsidian/" title="Obsidian vault desktop" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen></iframe></body></html>'''
+    return render_page('<div class="vault-actions"><p>Your shared Obsidian desktop and vault.</p><a class="button" href="/obsidian/" target="_blank" rel="noopener">Open desktop in a tab ↗</a></div><section class="panel vault-panel"><iframe src="/obsidian/" title="Obsidian vault desktop" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen></iframe></section>', 'Obsidian vault', '/vault')
 
 
 @app.get("/api/vault", dependencies=[Depends(authenticate)])

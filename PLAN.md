@@ -155,3 +155,7 @@ Queue all existing and new visit URLs for durable per-URL capture, excluding fra
 ## Crawl4AI service reuse — 2026-10-05
 
 Reuse the existing crawl4ai container (installed 0.8.6) on a dedicated network shared with the worker. Keep guarded fetching in the worker; send resource-stripped raw HTML to the local /crawl API for Markdown extraction with JavaScript off. Record extractor in page capture status and notes; fall back to Trafilatura on errors. Private .env selects endpoint and optional API token. Provide a validated, unstarted optional Compose service pinned to the tested API for server deployment. Browser-driven JavaScript crawling is not enabled by this extraction adapter.
+
+## Unified app UI — 2026-10-05
+
+Use one dashboard-based app shell and stylesheet for every authenticated page, including result/error pages and the vault wrapper. Shared navigation covers Overview, History, Devices, Import, Page scraping and Vault with active-state labels; common typography/forms/tables/buttons and Maldives times. Login shares visual tokens/components without exposing authenticated workspace navigation. Embedded Obsidian remains its own desktop inside the shared frame.

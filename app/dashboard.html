@@ -1,19 +1,3 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Overview · Forgetful Me</title><link rel="stylesheet" href="/static/dashboard.css">
-</head>
-<body>
-<a class="skip" href="#main">Skip to dashboard</a>
-<aside class="sidebar">
-  <a class="brand" href="/" aria-label="Forgetful Me home"><span class="mark" aria-hidden="true">fm<span>.</span></span><span>forgetful me<small>Your personal archive</small></span></a>
-  <div class="nav-label">WORKSPACE</div>
-  <nav aria-label="Dashboard sections"><a class="active" href="#main" aria-current="page"><span aria-hidden="true">◫</span> Overview</a><a href="#services"><span aria-hidden="true">◉</span> Services</a><a href="#activity"><span aria-hidden="true">≡</span> Job activity</a><a href="/history">Browsing history</a><a href="/devices">Browser devices</a><a href="/history/import">Import history</a><a href="/vault"><span aria-hidden="true">◇</span> Obsidian vault</a></nav>
-  <div class="sidebar-bottom"><span class="mini-label">CURRENT PHASE</span><strong>Foundation</strong><p>The home for your browsing history is taking shape.</p><span class="phase-line" aria-hidden="true"></span></div>
-</aside>
-<main id="main">
-  <header class="topbar"><span>Workspace <span class="slash">/</span> Overview</span><span class="private-label"><span aria-hidden="true">◈</span> Personal workspace</span></header>
   <div class="heading"><div><p class="eyebrow">YOUR ARCHIVE, AT A GLANCE</p><h1>Overview</h1><p class="subtitle">A clear view of what’s running and what’s happening.</p></div><a class="refresh" href="/" aria-label="Refresh dashboard"><span aria-hidden="true">↻</span> Refresh</a></div>
   <div class="summary-line">$overview<span class="updated">Updated $updated · UTC+05:00</span></div>
   <section class="metrics" aria-label="Stack summary">
@@ -23,7 +7,4 @@
   </section>
   <section class="panel" id="services"><div class="panel-heading"><div><h2>Stack status</h2><p>Connections and background service heartbeats.</p></div><span class="section-label">LIVE AT PAGE LOAD</span></div><div class="table-scroll"><table class="services"><caption class="sr-only">Service connection status and latest heartbeat</caption><thead><tr><th scope="col">Service</th><th scope="col">Status</th><th scope="col">Last check / heartbeat · UTC+05:00</th></tr></thead><tbody>$service_rows</tbody></table></div></section>
   <section class="panel" id="activity"><div class="panel-heading"><div><h2>Recent job activity</h2><p>The latest scheduled maintenance tasks.</p></div><span class="section-label">LATEST 8</span></div><div class="table-scroll"><table><caption class="sr-only">Latest eight background jobs</caption><thead><tr><th scope="col">Job</th><th scope="col">Task</th><th scope="col">Created · UTC+05:00</th><th scope="col">Status</th></tr></thead><tbody>$job_rows</tbody></table></div></section>
-  <section class="coming"><div class="coming-icon" aria-hidden="true">↗</div><div><h2>Connect your browsers</h2><p>Create a device token from Browser devices, configure the add-on, and view collected visits in Browsing history. Your Obsidian vault is available from the sidebar; automatic note export is still planned.</p></div><a class="planned" href="/devices">Connect</a></section>
-  <footer><span>Forgetful Me <span class="footer-dot">·</span> Foundation</span><span>Times shown in Maldives time (UTC+05:00)</span></footer>
-</main>
-</body></html>
+  <section class="coming"><div class="coming-icon" aria-hidden="true">↗</div><div><h2>Connect your browsers</h2><p>Create a device token from Browser devices, configure the add-on, and view collected visits in Browsing history. Your Obsidian vault is available from the sidebar; page content and visit indexes are delivered to your vault automatically.</p></div><a class="planned" href="/devices">Connect</a></section>
