@@ -1,6 +1,6 @@
 {$SITE_ADDRESS::80} {
     request_body {
-        max_size 5MB
+        max_size 105MB
     }
     header {
         X-Content-Type-Options nosniff

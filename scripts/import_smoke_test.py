@@ -30,6 +30,9 @@ try:
     assert '1 duplicates skipped' in upload(csv)
     equivalent = [{'url':'https://example.com/import-test','title':'Example','visited_at':'2026-01-01T13:00:00+01:00'}]
     assert '1 duplicates skipped' in upload(json.dumps({'visits':equivalent}).encode(),'history.json')
+    # Exceed the former app/proxy limits with valid JSON whitespace padding.
+    padded = json.dumps({'visits':equivalent}).encode() + b' ' * (6 * 1024 * 1024)
+    assert '1 duplicates skipped' in upload(padded, 'history.json')
     bad = b'url,title,visited_at\nhttps://example.com/must-not-save,Good,2026-01-02T12:00:00Z\njavascript:alert(1),Bad,2026-01-02T12:00:00Z\n'
     assert 'No visits were saved' in upload(bad)
     assert 'must-not-save' not in read('/history')

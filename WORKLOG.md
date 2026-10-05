@@ -290,3 +290,9 @@ Validation: rebuilt the Docker stack with all core services healthy. Import smok
 User reported `{"detail":"Sign in to manage browser devices"}` when opening history import in the Docker app. The browser-page dependency returned an API-style 401 for a missing session. Changed signed-out GET navigation for Devices, History and Import to redirect to login; successful login returns to the requested page. Return destinations are restricted to known local pages. POST operations still require a valid session; no authentication checks were removed. Cookie sessions are scoped to the hostname, so localhost and 127.0.0.1 do not share login state. Rebuilt the running Docker app.
 
 Validation passed: missing/invalid session redirects, successful login returning to import, rejection of external redirect destinations, full import/ingestion synthetic checks, and existing stack smoke tests including backup restore. Synthetic data removed. Committed and pushed the navigation fix.
+
+## 2026-10-05 — Increase history upload size
+
+User requested raising the upload limit from 4 MiB to 100 MiB. Updated file validation, streamed request limit, import page messages and README. Raised Caddy body limit to 105 MB (decimal), enough for a 100 MiB file plus the bounded multipart overhead. The 10,000-visit limit remains in place.
+
+Validation: rebuilt Docker with healthy core services and reloaded Caddy. Import smoke tests passed, including a valid JSON upload larger than 6 MiB, proving both former limits are removed; authentication, deduplication and invalid-file checks still passed. Synthetic fixtures deleted.

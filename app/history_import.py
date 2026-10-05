@@ -6,13 +6,13 @@ import json
 from datetime import datetime, timezone
 from app.browser_history import Visit
 
-MAX_BYTES = 4 * 1024 * 1024
+MAX_BYTES = 100 * 1024 * 1024
 MAX_ROWS = 10000
 
 
 def parse_export(content: bytes, filename: str) -> list[Visit]:
     if len(content) > MAX_BYTES:
-        raise ValueError('File exceeds 4 MiB. Split the export into smaller files.')
+        raise ValueError('File exceeds 100 MiB. Split the export into smaller files.')
     try:
         text = content.decode('utf-8-sig')
     except UnicodeDecodeError:

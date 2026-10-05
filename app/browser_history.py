@@ -130,7 +130,7 @@ def history():
 
 @router.get('/history/import', dependencies=[Depends(admin)])
 def import_page(request: Request):
-    return page(f'''<h1>Import browsing history</h1><p>Upload a UTF-8 CSV or JSON export. Files can contain up to 10,000 visits and 4 MiB. The whole file is checked before any visits are saved.</p>
+    return page(f'''<h1>Import browsing history</h1><p>Upload a UTF-8 CSV or JSON export. Files can contain up to 10,000 visits and 100 MiB. The whole file is checked before any visits are saved.</p>
 <p>CSV columns: <code>url,title,visited_at</code>. JSON: an array of objects with those same fields, or <code>{{"visits": [...]}}</code>. Dates must include a timezone.</p>
 <pre>url,title,visited_at
 https://example.com,Example,2026-10-04T12:30:00Z</pre>
@@ -151,7 +151,7 @@ async def import_history(request: Request):
     async for chunk in request.stream():
         body.extend(chunk)
         if len(body) > MAX_BYTES + 65536:
-            raise HTTPException(413, 'Upload exceeds 4 MiB')
+            raise HTTPException(413, 'Upload exceeds 100 MiB')
     message = BytesParser(policy=policy.default).parsebytes(('Content-Type: ' + content_type + '\r\nMIME-Version: 1.0\r\n\r\n').encode() + body)
     if not message.is_multipart():
         raise HTTPException(400, 'Invalid upload')

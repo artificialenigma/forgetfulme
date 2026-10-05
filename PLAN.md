@@ -123,3 +123,7 @@ Add a signed-in Import history page accepting explicit CSV/JSON uploads (UTF-8, 
 ## Browser sign-in navigation — 2026-10-05
 
 Protected browser pages redirect missing/invalid sessions to login and carry an allowlisted return destination. Protected mutations continue rejecting unauthenticated requests. Use a consistent hostname for the app and login because cookies are host-scoped.
+
+## Import upload size — 2026-10-05
+
+Accept history files up to 100 MiB, with 64 KiB multipart overhead allowance. Reverse proxy permits 105 MB requests. Retain the 10,000-visit limit.
