@@ -135,3 +135,7 @@ Accept Safari history schema version 1 with metadata and history arrays. Convert
 ## Large history imports — 2026-10-05
 
 Raise the file import entry limit to 1,000,000 while retaining the 100 MiB byte cap. Validate before saving, stage entries using PostgreSQL COPY, then insert with conflict deduplication in the same transaction. Distinguish empty exports from oversized exports and show the actual count when oversized.
+
+## Safari invalid entries — 2026-10-05
+
+Add an explicit checkbox (checked by default) allowing invalid Safari records to be skipped. Return exact invalid-field reasons, a skipped count and first 20 entry numbers without exposing URLs. Strict mode rejects the entire export; CSV/generic JSON remain strict. Validate all records before a single atomic save of accepted visits. Reject files without any valid visits.

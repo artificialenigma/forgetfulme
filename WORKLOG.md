@@ -312,3 +312,9 @@ User requested “update the docker”. Rebuilt/recreated the core and Archive D
 User reported the 1–10,000 visits validation error for a Safari backup. Raised the entry cap to 1,000,000, retained the 100 MiB byte cap, and updated the import page/README. Replaced per-row inserts for file imports with temporary-table COPY and one deduplicating INSERT inside a transaction. Empty-file and oversized-file errors now differ; oversized errors show the count. Added synthetic 10,001-entry Safari import and repeat-import checks.
 
 Validation: rebuilt Docker and confirmed healthy services. Import smoke tests passed including 10,001-entry Safari first import and duplicate retry, empty-file feedback, previous format/validation checks and >6 MiB upload. Synthetic fixtures deleted. Parsing and database work run in the thread pool so imports do not hold the async request loop during validation/saving.
+
+## 2026-10-05 — Safari entry 382 validation blocker
+
+User reported Safari entry 382 failing the generic validation message. Its actual contents were not available, so no specific cause was assumed. Added field-specific diagnostics and an explicit Safari skip-invalid checkbox checked by default. Accepted entries are saved while skipped counts and first 20 entry numbers/reasons are shown; URLs are not included in the report. Unchecked strict mode and generic imports still reject invalid files atomically. All-invalid exports save nothing. Added mixed valid/non-HTTP/invalid-time Safari tests, strict rejection and retry deduplication.
+
+Validation: Docker core services healthy. Import smoke suite passed for mixed Safari entries, skipped-count/field reports without URLs, strict rejection, all-invalid rejection, deduplicated retry, 10,001-entry bulk import, >6 MiB upload and existing authentication/format checks. Synthetic fixtures deleted.

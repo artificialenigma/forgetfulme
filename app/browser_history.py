@@ -131,11 +131,11 @@ def history():
 
 @router.get('/history/import', dependencies=[Depends(admin)])
 def import_page(request: Request):
-    return page(f'''<h1>Import browsing history</h1><p>Upload a UTF-8 CSV or JSON export. Files can contain up to 1,000,000 visits and 100 MiB. The whole file is checked before any visits are saved.</p>
+    return page(f'''<h1>Import browsing history</h1><p>Upload a UTF-8 CSV or JSON export. Files can contain up to 1,000,000 visits and 100 MiB. The whole file is checked before saving. Safari entries that fail validation can be skipped with a report; uncheck the option to reject the entire file.</p>
 <p>CSV columns: <code>url,title,visited_at</code>. JSON: an array of objects with those same fields, <code>{{"visits": [...]}}</code>, or a Safari history export with <code>metadata</code> and <code>history</code> (schema version 1). Generic dates must include a timezone; Safari <code>time_usec</code> is converted automatically.</p>
 <pre>url,title,visited_at
 https://example.com,Example,2026-10-04T12:30:00Z</pre>
-<form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{csrf(request)}"><p><label>Source name <input name="source" value="Imported history" required maxlength="100"></label></p><p><label>History file <input type="file" name="file" accept=".csv,.json" required></label></p><button>Import visits</button></form>
+<form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{csrf(request)}"><p><label>Source name <input name="source" value="Imported history" required maxlength="100"></label></p><p><label>History file <input type="file" name="file" accept=".csv,.json" required></label></p><p><label><input type="checkbox" name="skip_invalid_safari" value="yes" checked> Skip unsupported or invalid Safari entries and report them</label></p><button>Import visits</button></form>
 <p>Safari users: select the history JSON file from your browser export, not the ZIP archive. Each history entry becomes one stored visit at its recorded time; aggregate visit counts and load-failure flags are not stored.</p><p>Use the same source name when importing more files from the same browser. Repeated URL/timestamp pairs within that source are skipped. Imports and extension visits use separate identities, so overlapping data from the two methods can appear twice.</p><p>Only the file you select is uploaded; the app cannot read your browser history directly. Chrome users can also use the add-on’s last-30-day importer. URLs may contain personal information; remove unwanted entries before uploading.</p>''')
 
 
@@ -170,11 +170,15 @@ async def import_history(request: Request):
         if not source or len(source) > 100:
             raise ValueError('Provide a source name up to 100 characters.')
         content, filename = fields.get('file', (b'', None))
-        visits = await run_in_threadpool(parse_export, content, filename or '')
+        result = await run_in_threadpool(parse_export, content, filename or '', fields.get('skip_invalid_safari', (b'', None))[0] == b'yes')
+        visits = result.visits
     except (ValueError, UnicodeDecodeError) as error:
         return page('<h1>Import could not be completed</h1><p>' + html.escape(str(error)) + '</p><p>No visits were saved. <a href="/history/import">Try again</a>.</p>')
     inserted = await run_in_threadpool(save_import, source, visits)
-    return page(f'<h1>Import complete</h1><p>{inserted:,} visits imported. {len(visits)-inserted:,} duplicates skipped.</p><p><a href="/history">View browsing history</a> · <a href="/history/import">Import another file</a></p>')
+    report = ''
+    if result.skipped:
+        report = f'<h2>{result.skipped:,} unsupported or invalid entries skipped</h2><p>Showing the first {len(result.issues)} reasons. No skipped entry was saved.</p><ul>' + ''.join('<li>' + html.escape(issue) + '</li>' for issue in result.issues) + '</ul>'
+    return page(f'<h1>Import complete</h1><p>{inserted:,} visits imported. {len(visits)-inserted:,} duplicates skipped.</p>{report}<p><a href="/history">View browsing history</a> · <a href="/history/import">Import another file</a></p>')
 
 
 def save_import(source, visits):

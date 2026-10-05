@@ -14,10 +14,10 @@ device_id = str(uuid.uuid5(uuid.NAMESPACE_URL, 'forgetfulme:import:' + source.ca
 csrf = re.search(r'name="csrf" value="([a-f0-9]+)"', read('/history/import'))[1]
 
 
-def upload(content, filename='history.csv', token=csrf):
+def upload(content, filename='history.csv', token=csrf, skip_invalid=False):
     boundary = 'forgetfulme-test-boundary'
     parts = []
-    for name, value in [('csrf',token),('source',source)]:
+    for name, value in [('csrf',token),('source',source),('skip_invalid_safari','yes' if skip_invalid else 'no')]:
         parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode())
     parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{filename}"\r\nContent-Type: application/octet-stream\r\n\r\n'.encode() + content + f'\r\n--{boundary}--\r\n'.encode())
     request = urllib.request.Request(base + '/history/import', data=b''.join(parts), headers={'Content-Type':f'multipart/form-data; boundary={boundary}'})
@@ -40,6 +40,16 @@ try:
     assert '1 duplicates skipped' in upload(json.dumps(equivalent_safari).encode(),'history.json')
     safari['history'][0]['time_usec'] = '1774258180789274'
     assert 'No visits were saved' in upload(json.dumps(safari).encode(),'History.json')
+    all_invalid = upload(json.dumps(safari).encode(),'History.json',skip_invalid=True)
+    assert 'No valid visits found' in all_invalid and 'No visits were saved' in all_invalid
+    safari['history'] = [{'url':'https://example.com/safari-mixed','time_usec':1774258180789274},{'url':'file:///private/safari-test','time_usec':1774258180789274},{'url':'https://example.com/safari-bad-time','time_usec':-1}]
+    assert 'No visits were saved' in upload(json.dumps(safari).encode(),'History.json')
+    mixed = upload(json.dumps(safari).encode(),'History.json',skip_invalid=True)
+    assert '1 visits imported' in mixed and '2 unsupported or invalid entries skipped' in mixed
+    assert 'Safari history entry 2: url:' in mixed and 'Safari history entry 3: time_usec' in mixed
+    assert '/private/safari-test' not in mixed
+    retry = upload(json.dumps(safari).encode(),'History.json',skip_invalid=True)
+    assert '1 duplicates skipped' in retry
     safari['metadata']['schema_version'] = 2
     assert 'Unsupported Safari export' in upload(json.dumps(safari).encode(),'History.json')
     large = {'metadata': {'browser_name':'Safari','data_type':'history','schema_version':1}, 'history':[{'url':f'https://example.com/large-safari/{i}','time_usec':1774258180789274+i} for i in range(10001)]}
