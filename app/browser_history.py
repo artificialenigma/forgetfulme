@@ -203,13 +203,13 @@ def save_import(source, visits):
 def capture_status(request: Request):
     with connect() as db:
         counts = db.execute('SELECT state,count(*) AS count FROM page_captures GROUP BY state ORDER BY state').fetchall()
-        recent = db.execute("SELECT url,state,error,note_path FROM page_captures WHERE state IN ('failed','blocked','retry','complete') ORDER BY (state='complete'),coalesce(fetched_at,next_attempt_at) DESC LIMIT 30").fetchall()
-    body = '<h1>Page scraping</h1><p>The worker fetches each unique imported or collected URL, extracts readable public HTML/text into Markdown, and saves successful captures in <strong>Forgetful Me/Pages</strong> in the vault. Visit indexes remain in Browsing History.</p><p>'
+        recent = db.execute("SELECT url,state,error,note_path,extractor FROM page_captures WHERE state IN ('failed','blocked','retry','complete') ORDER BY (state='complete'),coalesce(fetched_at,next_attempt_at) DESC LIMIT 30").fetchall()
+    body = '<h1>Page scraping</h1><p>The worker fetches each unique imported or collected URL, extracts readable public HTML/text into Markdown, and saves successful captures in <strong>Forgetful Me/Pages</strong> in the vault. Visit indexes remain in Browsing History. Crawl4AI is used for HTML extraction when configured, with local extraction as a fallback.</p><p>'
     body += ' · '.join(html.escape(row['state']) + ': ' + f"{row['count']:,}" for row in counts) + '</p>'
     body += '<p>Refresh this page for progress. Local/private pages, robots restrictions, unavailable pages and unreadable content are reported as blocked. Temporary failures retry up to three times. Login-only or JavaScript-only content and PDFs need a separate capture path; browser cookies are never sent. Captures reflect the page now, not necessarily what you saw when visiting.</p>'
     body += f'<form method="post" action="/history/capture/retry"><input type="hidden" name="csrf" value="{csrf(request)}"><button>Retry failed pages</button></form><p><a href="/vault">Open Obsidian vault</a></p><table><tr><th>Page</th><th>Status</th><th>Result</th></tr>'
     for row in recent:
-        body += '<tr><td>' + html.escape(row['url']) + '</td><td>' + html.escape(row['state']) + '</td><td>' + html.escape(row['error'] or row['note_path'] or '') + '</td></tr>'
+        body += '<tr><td>' + html.escape(row['url']) + '</td><td>' + html.escape(row['state']) + '</td><td>' + html.escape(row['error'] or ((row['note_path'] or '') + (' · ' + row['extractor'] if row['extractor'] else ''))) + '</td></tr>'
     return page(body + '</table>')
 
 

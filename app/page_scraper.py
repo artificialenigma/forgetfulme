@@ -136,14 +136,24 @@ def scrape_page(url, digest, vault=Path('/vault')):
     if status != 200: raise FetchFailed(f'HTTP {status}')
     if content_type not in {'text/html','application/xhtml+xml','text/plain'}:
         raise Blocked('Page type is unsupported; only HTML and text are scraped')
+    engine = 'Trafilatura'
     if content_type == 'text/plain':
+        engine = 'Plain text'
         content = body.decode('utf-8',errors='replace').strip()
         title = urlsplit(final).hostname
         # Plain text is fenced so it cannot introduce active HTML/Markdown.
         fence = '`' * max(3, max((len(part) for part in re.findall(r'`+',content)),default=0)+1)
         content = fence + '\n' + content + '\n' + fence if content else ''
     else:
-        content = trafilatura.extract(body,url=final,output_format='markdown',include_comments=False,include_links=True,include_images=False,favor_precision=True)
+        from app.crawl4ai_client import extract_html
+        try:
+            content = extract_html(body,final)
+            if content: engine = 'Crawl4AI'
+        except Exception:
+            # Service outage/unsupported API must not stall the history backlog.
+            content = None
+        if not content:
+            content = trafilatura.extract(body,url=final,output_format='markdown',include_comments=False,include_links=True,include_images=False,favor_precision=True)
         metadata = trafilatura.extract_metadata(body)
         title = (metadata.title if metadata else None) or urlsplit(final).hostname
     if not content or len(content.strip()) < 40:
@@ -152,12 +162,12 @@ def scrape_page(url, digest, vault=Path('/vault')):
     folder.mkdir(parents=True,exist_ok=True)
     destination = folder / (digest + '.md')
     source_link = quote(final,safe=':/?#@!$&\'*=+;,%~-._')
-    note = f'# {text(title)}\n\nSource: [{text(final)}](<{source_link}>)\n\nFetched: {datetime.now(timezone.utc).isoformat()}\n\n> Captured from the public page at fetch time. Keep personal annotations in a separate note.\n\n---\n\n{content}\n'
+    note = f'# {text(title)}\n\nSource: [{text(final)}](<{source_link}>)\n\nFetched: {datetime.now(timezone.utc).isoformat()}\nExtractor: {engine}\n\n> Captured from the public page at fetch time. Keep personal annotations in a separate note.\n\n---\n\n{content}\n'
     temporary = destination.with_suffix('.md.tmp')
     with temporary.open('w',encoding='utf-8') as output:
         output.write(note); output.flush(); os.fsync(output.fileno())
     os.replace(temporary,destination)
-    return str(destination.relative_to(vault)), final
+    return str(destination.relative_to(vault)), final, engine
 
 
 def process_page():
@@ -167,8 +177,8 @@ def process_page():
         if not job: return False
         attempts = job['attempts'] + 1
         try:
-            path, final = scrape_page(job['url'],job['url_hash'])
-            db.execute("UPDATE page_captures SET state='complete',attempts=%s,note_path=%s,final_url=%s,fetched_at=now(),error=NULL WHERE url_hash=%s",(attempts,path,final,job['url_hash']))
+            path, final, engine = scrape_page(job['url'],job['url_hash'])
+            db.execute("UPDATE page_captures SET state='complete',attempts=%s,note_path=%s,final_url=%s,extractor=%s,fetched_at=now(),error=NULL WHERE url_hash=%s",(attempts,path,final,engine,job['url_hash']))
         except Blocked as error:
             db.execute("UPDATE page_captures SET state='blocked',attempts=%s,error=%s WHERE url_hash=%s",(attempts,str(error)[:200],job['url_hash']))
         except Exception as error:

@@ -151,3 +151,7 @@ Worker exports pending visits every ten seconds, at most eight date/ID groups pe
 ## Page content scraping — 2026-10-05
 
 Queue all existing and new visit URLs for durable per-URL capture, excluding fragments from identity. Worker attempts one page per cycle, with row locks, state/attempt/backoff tracking and authenticated manual failed-page retry. Fetch public HTTP(S) only with validated/pinned DNS addresses, certificate verification, redirect revalidation, robots checks, bounded bodies/time and no cookies. Use pinned Trafilatura Markdown extraction; atomically save managed Pages notes. Preserve history indexes. Report unsupported/private/robots/unreadable/auth-required pages as blocked and transient errors as retry/failed. No browser-session replay or PDF/MinerU processing in this milestone.
+
+## Crawl4AI service reuse — 2026-10-05
+
+Reuse the existing crawl4ai container (installed 0.8.6) on a dedicated network shared with the worker. Keep guarded fetching in the worker; send resource-stripped raw HTML to the local /crawl API for Markdown extraction with JavaScript off. Record extractor in page capture status and notes; fall back to Trafilatura on errors. Private .env selects endpoint and optional API token. Provide a validated, unstarted optional Compose service pinned to the tested API for server deployment. Browser-driven JavaScript crawling is not enabled by this extraction adapter.

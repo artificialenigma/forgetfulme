@@ -18,7 +18,7 @@ with patch.object(module.socket,'getaddrinfo',return_value=[(socket.AF_INET,sock
     else: raise AssertionError('Private DNS address accepted')
 article = ('<html><head><title>Public test article</title></head><body><nav>Navigation clutter</nav><article><h1>Public test article</h1><p>' + 'This article contains readable information about browser archiving and durable Markdown capture. '*12 + '</p><h2>Useful section</h2><p>' + 'A second paragraph describes how notes become available in the shared vault. '*10 + '</p></article><script>SECRET_SCRIPT_CONTENT</script></body></html>').encode()
 with TemporaryDirectory() as temp, patch.object(module,'public_target',return_value=None), patch.object(module,'fetch',return_value=(200,'text/html',article,'https://example.com/article')):
-    path, final = module.scrape_page('https://example.com/article','test-note',Path(temp))
+    path, final, engine = module.scrape_page('https://example.com/article','test-note',Path(temp))
     note = (Path(temp)/path).read_text()
     assert 'readable information' in note and 'Useful section' in note
     assert 'SECRET_SCRIPT_CONTENT' not in note and 'Navigation clutter' not in note
@@ -52,7 +52,7 @@ for attempts,expected in [(0,'retry'),(2,'failed')]:
 print('Public-address checks, extraction, boilerplate removal, deduped files, robots, content-type and retry tests passed')
 
 db=DB()
-with patch.object(module,'connect',return_value=db),patch.object(module,'scrape_page',return_value=('Forgetful Me/Pages/hash.md','https://example.com')):
+with patch.object(module,'connect',return_value=db),patch.object(module,'scrape_page',return_value=('Forgetful Me/Pages/hash.md','https://example.com','Trafilatura')):
     module.process_page()
     assert "state='complete'" in db.update[0] and db.update[1][1]=='Forgetful Me/Pages/hash.md'
 db=DB()

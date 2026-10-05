@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS page_captures (
  attempts integer NOT NULL DEFAULT 0, next_attempt_at timestamptz NOT NULL DEFAULT now(),
  note_path text, final_url text, fetched_at timestamptz, error text
 );
+ALTER TABLE page_captures ADD COLUMN IF NOT EXISTS extractor text;
 CREATE INDEX IF NOT EXISTS page_captures_pending ON page_captures(next_attempt_at) WHERE state IN ('pending','retry');
 INSERT INTO page_captures(url_hash,url)
  SELECT DISTINCT encode(sha256(convert_to(split_part(url,'#',1),'UTF8')),'hex'),split_part(url,'#',1) FROM browser_visits

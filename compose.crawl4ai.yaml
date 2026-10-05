@@ -1,0 +1,19 @@
+# Alternative to reusing the existing crawl4ai container.
+# CRAWL4AI_URL=http://crawl4ai-service:11235 docker compose -f compose.yaml -f compose.crawl4ai.yaml --profile crawl4ai up -d --build --wait
+services:
+  crawl4ai-service:
+    image: unclecode/crawl4ai:0.8.6
+    profiles: [crawl4ai]
+    restart: unless-stopped
+    shm_size: 1gb
+    networks: [crawl4ai]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:11235/health",timeout=5)']
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: '3'}

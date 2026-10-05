@@ -5,7 +5,7 @@ x-app: &app
   build: .
   restart: unless-stopped
   init: true
-  environment:
+  environment: &app-environment
     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run python3 scripts/setup.py first}
     ADMIN_USER: ${ADMIN_USER:-admin}
     ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Run python3 scripts/setup.py first}
@@ -80,7 +80,11 @@ services:
   worker:
     <<: *app
     command: [python, -m, app.jobs, worker]
-    networks: [backend, scraper_egress]
+    networks: [backend, scraper_egress, crawl4ai]
+    environment:
+      <<: *app-environment
+      CRAWL4AI_URL: ${CRAWL4AI_URL:-}
+      CRAWL4AI_API_TOKEN: ${CRAWL4AI_API_TOKEN:-}
     healthcheck:
       test: [CMD, python, -m, app.health, worker]
       interval: 15s
@@ -177,6 +181,8 @@ services:
       options: {max-size: 10m, max-file: '3'}
 
 networks:
+  crawl4ai:
+    internal: true
   scraper_egress:
   edge:
   obsidian:
