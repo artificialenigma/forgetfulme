@@ -296,3 +296,9 @@ Validation passed: missing/invalid session redirects, successful login returning
 User requested raising the upload limit from 4 MiB to 100 MiB. Updated file validation, streamed request limit, import page messages and README. Raised Caddy body limit to 105 MB (decimal), enough for a 100 MiB file plus the bounded multipart overhead. The 10,000-visit limit remains in place.
 
 Validation: rebuilt Docker with healthy core services and reloaded Caddy. Import smoke tests passed, including a valid JSON upload larger than 6 MiB, proving both former limits are removed; authentication, deduplication and invalid-file checks still passed. Synthetic fixtures deleted.
+
+## 2026-10-05 — Safari backup format support
+
+User supplied the Safari JSON structure (metadata browser/data type/schema version, history entries with url/time_usec/visit_count/load-failure flag). Added explicit Safari schema-1 detection and validation, exact conversion of Unix microseconds, optional-title handling, and existing repeat-import identity compatibility. Added a synthetic example without the user's personal URL and integration coverage for Safari imports/retries, microsecond-equivalent generic timestamps, invalid timestamp types and unsupported schemas. Confirmed the timestamp epoch against Apple's export documentation. No personal history was imported. Aggregate visit_count and load-failure/redirect metadata are not stored; the UI and README disclose this boundary.
+
+Validation: core Docker services healthy after rebuild. Full import/ingestion smoke test passed, including Safari first import and duplicate retry, exact timestamp equivalence, invalid Safari timestamps/schema versions, >6 MiB upload, generic CSV/JSON, atomic invalid-row rejection and authentication. Synthetic fixtures removed.

@@ -33,6 +33,15 @@ try:
     # Exceed the former app/proxy limits with valid JSON whitespace padding.
     padded = json.dumps({'visits':equivalent}).encode() + b' ' * (6 * 1024 * 1024)
     assert '1 duplicates skipped' in upload(padded, 'history.json')
+    safari = {'metadata': {'browser_name':'Safari','data_type':'history','schema_version':1}, 'history':[{'url':'https://example.com/safari-import-test','time_usec':1774258180789274,'visit_count':1,'latest_visit_was_load_failure':True}]}
+    assert '1 visits imported' in upload(json.dumps(safari).encode(),'History.json')
+    assert '1 duplicates skipped' in upload(json.dumps(safari).encode(),'History.json')
+    equivalent_safari = [{'url':'https://example.com/safari-import-test','visited_at':'2026-03-23T09:29:40.789274Z'}]
+    assert '1 duplicates skipped' in upload(json.dumps(equivalent_safari).encode(),'history.json')
+    safari['history'][0]['time_usec'] = '1774258180789274'
+    assert 'No visits were saved' in upload(json.dumps(safari).encode(),'History.json')
+    safari['metadata']['schema_version'] = 2
+    assert 'Unsupported Safari export' in upload(json.dumps(safari).encode(),'History.json')
     bad = b'url,title,visited_at\nhttps://example.com/must-not-save,Good,2026-01-02T12:00:00Z\njavascript:alert(1),Bad,2026-01-02T12:00:00Z\n'
     assert 'No visits were saved' in upload(bad)
     assert 'must-not-save' not in read('/history')

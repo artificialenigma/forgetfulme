@@ -127,3 +127,7 @@ Protected browser pages redirect missing/invalid sessions to login and carry an 
 ## Import upload size — 2026-10-05
 
 Accept history files up to 100 MiB, with 64 KiB multipart overhead allowance. Reverse proxy permits 105 MB requests. Retain the 10,000-visit limit.
+
+## Safari history JSON — 2026-10-05
+
+Accept Safari history schema version 1 with metadata and history arrays. Convert integer Unix time_usec to UTC using exact microsecond arithmetic, handle missing titles, and retain existing file/row validation and source-level deduplication. One record per exported entry; aggregate counts, load-failure flags and redirect metadata are not retained. ZIP archives and Safari database files are not accepted by this JSON importer.

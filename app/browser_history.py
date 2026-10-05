@@ -131,11 +131,11 @@ def history():
 @router.get('/history/import', dependencies=[Depends(admin)])
 def import_page(request: Request):
     return page(f'''<h1>Import browsing history</h1><p>Upload a UTF-8 CSV or JSON export. Files can contain up to 10,000 visits and 100 MiB. The whole file is checked before any visits are saved.</p>
-<p>CSV columns: <code>url,title,visited_at</code>. JSON: an array of objects with those same fields, or <code>{{"visits": [...]}}</code>. Dates must include a timezone.</p>
+<p>CSV columns: <code>url,title,visited_at</code>. JSON: an array of objects with those same fields, <code>{{"visits": [...]}}</code>, or a Safari history export with <code>metadata</code> and <code>history</code> (schema version 1). Generic dates must include a timezone; Safari <code>time_usec</code> is converted automatically.</p>
 <pre>url,title,visited_at
 https://example.com,Example,2026-10-04T12:30:00Z</pre>
 <form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{csrf(request)}"><p><label>Source name <input name="source" value="Imported history" required maxlength="100"></label></p><p><label>History file <input type="file" name="file" accept=".csv,.json" required></label></p><button>Import visits</button></form>
-<p>Use the same source name when importing more files from the same browser. Repeated URL/timestamp pairs within that source are skipped. Imports and extension visits use separate identities, so overlapping data from the two methods can appear twice.</p><p>Only the file you select is uploaded; the app cannot read your browser history directly. Chrome users can also use the add-on’s last-30-day importer. URLs may contain personal information; remove unwanted entries before uploading.</p>''')
+<p>Safari users: select the history JSON file from your browser export, not the ZIP archive. Each history entry becomes one stored visit at its recorded time; aggregate visit counts and load-failure flags are not stored.</p><p>Use the same source name when importing more files from the same browser. Repeated URL/timestamp pairs within that source are skipped. Imports and extension visits use separate identities, so overlapping data from the two methods can appear twice.</p><p>Only the file you select is uploaded; the app cannot read your browser history directly. Chrome users can also use the add-on’s last-30-day importer. URLs may contain personal information; remove unwanted entries before uploading.</p>''')
 
 
 @router.post('/history/import', dependencies=[Depends(admin)])
