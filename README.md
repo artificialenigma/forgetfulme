@@ -2,7 +2,7 @@
 
 A self-hosted browsing archive that will collect history from Chrome and Safari and export it to Obsidian.
 
-The initial Docker foundation includes Caddy, PostgreSQL, a Python/FastAPI webapp, a background worker, a scheduler, and scheduled backups. The dashboard shows service summary cards, database connectivity, service heartbeats, and the latest eight maintenance jobs, with timestamps in Maldives time and a responsive layout. Use Refresh to fetch current data. Browser ingestion, history search, and Obsidian delivery are not implemented yet.
+The initial Docker foundation includes Caddy, PostgreSQL, a Python/FastAPI webapp, a background worker, a scheduler, and scheduled backups. The dashboard shows service summary cards, database connectivity, service heartbeats, and the latest eight maintenance jobs, with timestamps in Maldives time and a responsive layout. Use Refresh to fetch current data. Browser ingestion, Safari/CSV/JSON import, paginated history, automatic visit indexes and public-page Markdown capture are implemented. Full-text history search remains planned.
 
 ## Run locally
 
@@ -139,3 +139,11 @@ Browsing history now uses a responsive page with 50 entries per page, previous/n
 ### Automatic Obsidian delivery
 
 The worker now exports existing and newly collected/imported history to `Forgetful Me/Browsing History/YYYY/MM` in the shared vault. Each managed Markdown file groups a day’s visits in chunks of at most 1,000 and includes links, titles, times and sources. The worker processes bounded batches every ten seconds; a large backlog takes time. Refresh Browsing history to see exported/pending counts, then open the Obsidian vault from the app. Managed notes may be rebuilt on new data/retry; keep annotations in separate notes. Exported content is visit metadata, not scraped page bodies. Database and vault backups already cover this data.
+
+### Page content capture
+
+The worker now queues every distinct imported/collected URL (fragments removed) and captures readable public HTML or plain text into `Forgetful Me/Pages/<URL hash>.md`. Existing history is queued at migration. Source URL and fetch timestamp appear in each note. The earlier Browsing History files remain visit indexes; page content is stored separately. Open **Page scraping status** from Browsing history to see counts, blocked/failed reasons and retry failed pages.
+
+The worker attempts one page per ten-second cycle, follows up to five redirects, checks robots rules, pins connections to validated public IPs with TLS hostname verification, limits fetched pages to 5 MiB and does not use browser cookies. Local/private addresses and nonstandard ports are excluded. Temporary failures retry up to three attempts. Login-only, JavaScript-only, robots-blocked, unavailable or non-HTML/text pages are reported rather than marked captured. PDFs are not sent to MinerU yet. Notes capture the current server-visible page; they cannot reconstruct its contents at the historical visit time. Images and browser session data are not captured. Managed page notes can be rebuilt on retries; keep annotations separately. The content request necessarily sends the URL, including its query, to the target website. The worker has an explicit egress network; other backend services remain on the internal network.
+
+Extraction uses pinned [Trafilatura](https://trafilatura.readthedocs.io/en/latest/extraction-overview.html) with Markdown output, formatting and readable-content filtering. Verify isolated extraction/network-boundary behavior with `docker compose exec -T worker python - < scripts/page_scraper_test.py`.

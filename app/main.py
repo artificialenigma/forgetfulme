@@ -37,7 +37,7 @@ def authenticate(request: Request, credentials: Annotated[HTTPBasicCredentials |
 
 def login_destination(value):
     # Only known pages are accepted: never redirect to user-provided external URLs.
-    return value if value in {"/", "/devices", "/history", "/history/import", "/vault"} else "/"
+    return value if value in {"/", "/devices", "/history", "/history/import", "/history/capture", "/vault"} else "/"
 
 
 def login_page(error="", destination="/"):
@@ -108,7 +108,9 @@ def vault_status():
     vault = Path("/vault")
     with connect() as db:
         progress = db.execute('SELECT count(*) FILTER (WHERE obsidian_exported_at IS NULL) AS pending, count(*) FILTER (WHERE obsidian_exported_at IS NOT NULL) AS exported FROM browser_visits').fetchone()
-    return {"history_export": progress, "history_folder": "Forgetful Me/Browsing History", "mounted": vault.is_dir(), "name": "Forgetful Me", "markdown_files": sum(1 for p in vault.rglob("*.md") if ".obsidian" not in p.parts), "desktop_url": "/vault"}
+    with connect() as db:
+        captures = db.execute('SELECT state,count(*) AS count FROM page_captures GROUP BY state').fetchall()
+    return {"page_captures": {row['state']: row['count'] for row in captures}, "pages_folder": "Forgetful Me/Pages", "history_export": progress, "history_folder": "Forgetful Me/Browsing History", "mounted": vault.is_dir(), "name": "Forgetful Me", "markdown_files": sum(1 for p in vault.rglob("*.md") if ".obsidian" not in p.parts), "desktop_url": "/vault"}
 
 
 @app.get("/health/ready")

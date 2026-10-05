@@ -46,4 +46,4 @@ try:
     ingest({'visits':[visit]},expected=401)
     print('Pairing, ingestion, deduplication, URL validation, batch limits, history display and revocation passed')
 finally:
-    subprocess.run(['docker','compose','exec','-T','db','psql','-U','forgetfulme','-d','forgetfulme','-c',"DELETE FROM browser_visits WHERE device_id IN (SELECT id FROM browser_devices WHERE name='Synthetic add-on smoke test'); DELETE FROM browser_devices WHERE name='Synthetic add-on smoke test';"],check=True,stdout=subprocess.DEVNULL)
+    subprocess.run(['docker','compose','exec','-T','db','psql','-U','forgetfulme','-d','forgetfulme','-c',"DELETE FROM page_captures WHERE url='https://example.com/addon-test' AND NOT EXISTS (SELECT 1 FROM browser_visits v JOIN browser_devices d ON d.id=v.device_id WHERE v.url='https://example.com/addon-test' AND d.name<>'Synthetic add-on smoke test'); DELETE FROM browser_visits WHERE device_id IN (SELECT id FROM browser_devices WHERE name='Synthetic add-on smoke test'); DELETE FROM browser_devices WHERE name='Synthetic add-on smoke test';"],check=True,stdout=subprocess.DEVNULL)

@@ -33,6 +33,8 @@ if __name__ == "__main__":
                 count = export_pending()
                 if count:
                     logging.info("Exported %s visits to Obsidian", count)
+                from app.page_scraper import process_page
+                process_page()
         except Exception:
             logging.exception("Job loop failed; retrying")
         time.sleep(10)

@@ -114,6 +114,8 @@ def ingest(batch: Batch, request: Request):
         inserted = 0
         for visit in batch.visits:
             inserted += db.execute('INSERT INTO browser_visits(device_id,event_id,url,title,visited_at) VALUES (%s,%s,%s,%s,%s) ON CONFLICT(device_id,event_id) DO NOTHING', (device['id'], visit.event_id, visit.url, visit.title, visit.visited_at)).rowcount
+            page_url = visit.url.split('#',1)[0]
+            db.execute('INSERT INTO page_captures(url_hash,url) VALUES (%s,%s) ON CONFLICT DO NOTHING', (hashlib.sha256(page_url.encode()).hexdigest(),page_url))
         db.execute('UPDATE browser_devices SET last_seen=now() WHERE id=%s', (device['id'],))
     return {'accepted': len(batch.visits), 'inserted': inserted}
 
@@ -192,5 +194,28 @@ def save_import(source, visits):
             for visit in visits:
                 copy.write_row((visit.event_id, visit.url, visit.title, visit.visited_at))
         inserted = db.execute('INSERT INTO browser_visits(device_id,event_id,url,title,visited_at) SELECT %s,event_id,url,title,visited_at FROM import_visits ON CONFLICT(device_id,event_id) DO NOTHING', (device_id,)).rowcount
+        db.execute("INSERT INTO page_captures(url_hash,url) SELECT DISTINCT encode(sha256(convert_to(split_part(url,'#',1),'UTF8')),'hex'),split_part(url,'#',1) FROM import_visits ON CONFLICT DO NOTHING")
         db.execute('UPDATE browser_devices SET last_seen=now() WHERE id=%s', (device_id,))
     return inserted
+
+
+@router.get('/history/capture', dependencies=[Depends(admin)])
+def capture_status(request: Request):
+    with connect() as db:
+        counts = db.execute('SELECT state,count(*) AS count FROM page_captures GROUP BY state ORDER BY state').fetchall()
+        recent = db.execute("SELECT url,state,error,note_path FROM page_captures WHERE state IN ('failed','blocked','retry','complete') ORDER BY (state='complete'),coalesce(fetched_at,next_attempt_at) DESC LIMIT 30").fetchall()
+    body = '<h1>Page scraping</h1><p>The worker fetches each unique imported or collected URL, extracts readable public HTML/text into Markdown, and saves successful captures in <strong>Forgetful Me/Pages</strong> in the vault. Visit indexes remain in Browsing History.</p><p>'
+    body += ' · '.join(html.escape(row['state']) + ': ' + f"{row['count']:,}" for row in counts) + '</p>'
+    body += '<p>Refresh this page for progress. Local/private pages, robots restrictions, unavailable pages and unreadable content are reported as blocked. Temporary failures retry up to three times. Login-only or JavaScript-only content and PDFs need a separate capture path; browser cookies are never sent. Captures reflect the page now, not necessarily what you saw when visiting.</p>'
+    body += f'<form method="post" action="/history/capture/retry"><input type="hidden" name="csrf" value="{csrf(request)}"><button>Retry failed pages</button></form><p><a href="/vault">Open Obsidian vault</a></p><table><tr><th>Page</th><th>Status</th><th>Result</th></tr>'
+    for row in recent:
+        body += '<tr><td>' + html.escape(row['url']) + '</td><td>' + html.escape(row['state']) + '</td><td>' + html.escape(row['error'] or row['note_path'] or '') + '</td></tr>'
+    return page(body + '</table>')
+
+
+@router.post('/history/capture/retry', dependencies=[Depends(admin)])
+async def retry_captures(request: Request):
+    await form(request)
+    with connect() as db:
+        db.execute("UPDATE page_captures SET state='pending',attempts=0,error=NULL,next_attempt_at=now() WHERE state='failed'")
+    return RedirectResponse('/history/capture',status_code=303)

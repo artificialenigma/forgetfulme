@@ -147,3 +147,7 @@ Use a dedicated responsive history page, bounded title/URL text, named sources, 
 ## Obsidian delivery — 2026-10-05
 
 Worker exports pending visits every ten seconds, at most eight date/ID groups per pass. Each note holds at most 1,000 visits, contains escaped Markdown title/link, timestamp and source, and resides in the managed Forgetful Me/Browsing History/YYYY/MM folder. Atomic note replacement precedes exported_at updates in a transaction; failures retry. Existing visits are backfilled automatically. History page and API expose exported/pending totals. Personal annotations belong outside managed files.
+
+## Page content scraping — 2026-10-05
+
+Queue all existing and new visit URLs for durable per-URL capture, excluding fragments from identity. Worker attempts one page per cycle, with row locks, state/attempt/backoff tracking and authenticated manual failed-page retry. Fetch public HTTP(S) only with validated/pinned DNS addresses, certificate verification, redirect revalidation, robots checks, bounded bodies/time and no cookies. Use pinned Trafilatura Markdown extraction; atomically save managed Pages notes. Preserve history indexes. Report unsupported/private/robots/unreadable/auth-required pages as blocked and transient errors as retry/failed. No browser-session replay or PDF/MinerU processing in this milestone.

@@ -7,7 +7,7 @@ from pathlib import Path
 
 env = dict(line.split('=', 1) for line in Path('.env').read_text().splitlines() if line and not line.startswith('#'))
 base = 'http://localhost:' + env.get('HTTP_PORT', '8080')
-for path in ['/devices', '/history', '/history/import']:
+for path in ['/devices', '/history', '/history/import', '/history/capture']:
     for headers in [{}, {'Cookie': 'forgetfulme_session=invalid'}]:
         with urllib.request.urlopen(urllib.request.Request(base+path, headers=headers),timeout=10) as response:
             assert response.url == base + '/login?next=' + path

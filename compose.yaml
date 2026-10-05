@@ -80,6 +80,7 @@ services:
   worker:
     <<: *app
     command: [python, -m, app.jobs, worker]
+    networks: [backend, scraper_egress]
     healthcheck:
       test: [CMD, python, -m, app.health, worker]
       interval: 15s
@@ -176,6 +177,7 @@ services:
       options: {max-size: 10m, max-file: '3'}
 
 networks:
+  scraper_egress:
   edge:
   obsidian:
   backend:

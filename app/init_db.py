@@ -24,6 +24,16 @@ CREATE TABLE IF NOT EXISTS browser_visits (
 ALTER TABLE browser_visits ADD COLUMN IF NOT EXISTS obsidian_exported_at timestamptz;
 CREATE INDEX IF NOT EXISTS browser_visits_export_pending ON browser_visits(id) WHERE obsidian_exported_at IS NULL;
 CREATE INDEX IF NOT EXISTS browser_visits_time ON browser_visits(visited_at DESC);
+CREATE TABLE IF NOT EXISTS page_captures (
+ url_hash text PRIMARY KEY, url text NOT NULL,
+ state text NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','retry','complete','blocked','failed')),
+ attempts integer NOT NULL DEFAULT 0, next_attempt_at timestamptz NOT NULL DEFAULT now(),
+ note_path text, final_url text, fetched_at timestamptz, error text
+);
+CREATE INDEX IF NOT EXISTS page_captures_pending ON page_captures(next_attempt_at) WHERE state IN ('pending','retry');
+INSERT INTO page_captures(url_hash,url)
+ SELECT DISTINCT encode(sha256(convert_to(split_part(url,'#',1),'UTF8')),'hex'),split_part(url,'#',1) FROM browser_visits
+ ON CONFLICT(url_hash) DO NOTHING;
 """
 
 if __name__ == "__main__":
