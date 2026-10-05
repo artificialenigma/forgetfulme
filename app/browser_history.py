@@ -19,7 +19,7 @@ def admin(request: Request):
 
 
 def page(body):
-    return HTMLResponse('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Browser history · Forgetful Me</title><style>body{font:16px system-ui;max-width:1100px;margin:40px auto;padding:20px;background:#f7f5ef;color:#253831}a{color:#24644e}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:12px;border-bottom:1px solid #ddd;overflow-wrap:anywhere}input,button{padding:10px;font:inherit}code{overflow-wrap:anywhere}small{color:#52645c}</style><a href="/">← Dashboard</a> · <a href="/devices">Devices</a> · <a href="/history">History</a>' + body + '</html>')
+    return HTMLResponse('<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Browser history · Forgetful Me</title><style>body{font:16px system-ui;max-width:1100px;margin:40px auto;padding:20px;background:#f7f5ef;color:#253831}a{color:#24644e}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:12px;border-bottom:1px solid #ddd;overflow-wrap:anywhere}input,button{padding:10px;font:inherit}code{overflow-wrap:anywhere}small{color:#52645c}</style><a href="/">← Dashboard</a> · <a href="/devices">Devices</a> · <a href="/history">History</a> · <a href="/history/import">Import history</a>' + body + '</html>')
 
 
 def csrf(request):
@@ -124,3 +124,57 @@ def history():
     for row in rows:
         body += f'<tr><td><a target="_blank" rel="noopener noreferrer" href="{html.escape(row["url"], quote=True)}">{html.escape(row["title"] or row["url"])}</a><br><small>{html.escape(row["url"])}</small></td><td>{html.escape(row["name"])}</td><td>{row["visited_at"].astimezone(timezone.utc).strftime("%d %b %Y %H:%M:%S")}</td></tr>'
     return page(body + '</table>' + ('<p>No visits yet. <a href="/devices">Connect a browser</a>.</p>' if not rows else ''))
+
+
+@router.get('/history/import', dependencies=[Depends(admin)])
+def import_page(request: Request):
+    return page(f'''<h1>Import browsing history</h1><p>Upload a UTF-8 CSV or JSON export. Files can contain up to 10,000 visits and 4 MiB. The whole file is checked before any visits are saved.</p>
+<p>CSV columns: <code>url,title,visited_at</code>. JSON: an array of objects with those same fields, or <code>{{"visits": [...]}}</code>. Dates must include a timezone.</p>
+<pre>url,title,visited_at
+https://example.com,Example,2026-10-04T12:30:00Z</pre>
+<form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf" value="{csrf(request)}"><p><label>Source name <input name="source" value="Imported history" required maxlength="100"></label></p><p><label>History file <input type="file" name="file" accept=".csv,.json" required></label></p><button>Import visits</button></form>
+<p>Use the same source name when importing more files from the same browser. Repeated URL/timestamp pairs within that source are skipped. Imports and extension visits use separate identities, so overlapping data from the two methods can appear twice.</p><p>Only the file you select is uploaded; the app cannot read your browser history directly. Chrome users can also use the add-on’s last-30-day importer. URLs may contain personal information; remove unwanted entries before uploading.</p>''')
+
+
+@router.post('/history/import', dependencies=[Depends(admin)])
+async def import_history(request: Request):
+    from email import policy
+    from email.parser import BytesParser
+    from app.history_import import MAX_BYTES, parse_export
+
+    content_type = request.headers.get('content-type', '')
+    if not content_type.startswith('multipart/form-data') or '\r' in content_type or '\n' in content_type or len(content_type) > 512:
+        raise HTTPException(400, 'Upload a CSV or JSON file using the import form')
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > MAX_BYTES + 65536:
+            raise HTTPException(413, 'Upload exceeds 4 MiB')
+    message = BytesParser(policy=policy.default).parsebytes(('Content-Type: ' + content_type + '\r\nMIME-Version: 1.0\r\n\r\n').encode() + body)
+    if not message.is_multipart():
+        raise HTTPException(400, 'Invalid upload')
+    fields = {}
+    for part in message.iter_parts():
+        name = part.get_param('name', header='content-disposition')
+        if name in fields or part.is_multipart():
+            raise HTTPException(400, 'Invalid or duplicate upload fields')
+        fields[name] = (part.get_payload(decode=True) or b'', part.get_filename())
+    try:
+        supplied_csrf = fields.get('csrf', (b'', None))[0]
+        if not secrets.compare_digest(supplied_csrf, csrf(request).encode()):
+            raise HTTPException(403, 'Reload the import page and try again')
+        source = fields.get('source', (b'', None))[0].decode('utf-8').strip()
+        if not source or len(source) > 100:
+            raise ValueError('Provide a source name up to 100 characters.')
+        content, filename = fields.get('file', (b'', None))
+        visits = parse_export(content, filename or '')
+    except (ValueError, UnicodeDecodeError) as error:
+        return page('<h1>Import could not be completed</h1><p>' + html.escape(str(error)) + '</p><p>No visits were saved. <a href="/history/import">Try again</a>.</p>')
+    device_id = uuid.uuid5(uuid.NAMESPACE_URL, 'forgetfulme:import:' + source.casefold())
+    with connect() as db:
+        db.execute('INSERT INTO browser_devices(id,name,token_hash,revoked) VALUES (%s,%s,%s,true) ON CONFLICT(id) DO NOTHING', (device_id, 'Import: ' + source, hashlib.sha256(secrets.token_bytes(32)).hexdigest()))
+        inserted = 0
+        for visit in visits:
+            inserted += db.execute('INSERT INTO browser_visits(device_id,event_id,url,title,visited_at) VALUES (%s,%s,%s,%s,%s) ON CONFLICT(device_id,event_id) DO NOTHING', (device_id, visit.event_id, visit.url, visit.title, visit.visited_at)).rowcount
+        db.execute('UPDATE browser_devices SET last_seen=now() WHERE id=%s', (device_id,))
+    return page(f'<h1>Import complete</h1><p>{inserted:,} visits imported. {len(visits)-inserted:,} duplicates skipped.</p><p><a href="/history">View browsing history</a> · <a href="/history/import">Import another file</a></p>')

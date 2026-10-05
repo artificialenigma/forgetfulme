@@ -115,3 +115,7 @@ The Docker stack is implemented. Browser extensions, history ingestion/search, p
 - Chrome MV3 extension: new local visits plus optional last-30-day import using history search/getVisits; minute alarms, persistent bounded offline queue, explicit opt-in, domain exclusions, server-specific optional permissions.
 - Safari source: shared add-on with nonpersistent background script and new nonprivate completed tab-load capture when history API is unavailable. Existing Safari history import is unavailable. Native packaging/manual capture verification remain pending; local Xcode license prevents conversion.
 - HTTPS for remote endpoints, loopback-only HTTP during local testing. Existing queue cleared when destination/token changes. No scraping or automatic Obsidian export in this collection milestone.
+
+## File import — 2026-10-05
+
+Add a signed-in Import history page accepting explicit CSV/JSON uploads (UTF-8, url/title/visited_at fields). Bound files to 4 MiB and 10,000 rows, validate all rows before the database transaction, and reject invalid URLs/timestamps. Named import sources use deterministic IDs and cannot authenticate ingestion; hash normalized UTC timestamp plus URL for repeat-import deduplication within that source. Show inserted/skipped counts and link to history. Browser database and vendor-specific export parsing are outside this import format; Chrome’s add-on importer remains available. Overlap with extension event identities can produce duplicates.

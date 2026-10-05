@@ -123,3 +123,9 @@ Only Compose configuration was validated here. Image build, GPU inference, parsi
 ### Browser add-ons
 
 Chrome collection and a Safari source package are now available. See [installation and privacy instructions](extensions/README.md). Sign in, create a token in **Browser devices**, load `extensions/chrome` as an unpacked extension, and configure it. New visits appear in **Browsing history**. Chrome optionally imports the last 30 days; Safari captures new tab loads and requires Xcode packaging. Safari packaging is currently blocked by the unaccepted local Xcode license. Automatic Obsidian export remains planned.
+
+### Import browsing data files
+
+Open **Import history** from the dashboard or Devices page. Upload a UTF-8 `.csv` or `.json` file with `url`, `visited_at`, and optional `title`. CSV uses a header row; JSON accepts an array or `{"visits": [...]}`. Dates must be ISO 8601 with a timezone, for example `2026-01-01T12:00:00Z`. See [CSV example](examples/history.csv) and [JSON example](examples/history.json).
+
+Use the same source name for files from the same browser: identical URL/timestamp pairs are skipped, including equivalent timezone offsets. The importer validates the whole file before saving, limits uploads to 4 MiB and 10,000 rows, and reports imported/duplicate counts. It does not open browser databases or accept arbitrary vendor export schemas; convert those to the documented fields, or use the Chrome add-on’s history import. File imports and extension capture have separate event identities, so overlapping data can appear twice. Imported sources cannot authenticate browser ingestion. Verify with `python3 scripts/import_smoke_test.py` against the running stack.
