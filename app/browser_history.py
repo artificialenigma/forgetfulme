@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlsplit
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field, field_validator
 from app.db import connect
 from app.auth import COOKIE, session_valid, signature
@@ -130,7 +131,7 @@ def history():
 
 @router.get('/history/import', dependencies=[Depends(admin)])
 def import_page(request: Request):
-    return page(f'''<h1>Import browsing history</h1><p>Upload a UTF-8 CSV or JSON export. Files can contain up to 10,000 visits and 100 MiB. The whole file is checked before any visits are saved.</p>
+    return page(f'''<h1>Import browsing history</h1><p>Upload a UTF-8 CSV or JSON export. Files can contain up to 1,000,000 visits and 100 MiB. The whole file is checked before any visits are saved.</p>
 <p>CSV columns: <code>url,title,visited_at</code>. JSON: an array of objects with those same fields, <code>{{"visits": [...]}}</code>, or a Safari history export with <code>metadata</code> and <code>history</code> (schema version 1). Generic dates must include a timezone; Safari <code>time_usec</code> is converted automatically.</p>
 <pre>url,title,visited_at
 https://example.com,Example,2026-10-04T12:30:00Z</pre>
@@ -169,14 +170,22 @@ async def import_history(request: Request):
         if not source or len(source) > 100:
             raise ValueError('Provide a source name up to 100 characters.')
         content, filename = fields.get('file', (b'', None))
-        visits = parse_export(content, filename or '')
+        visits = await run_in_threadpool(parse_export, content, filename or '')
     except (ValueError, UnicodeDecodeError) as error:
         return page('<h1>Import could not be completed</h1><p>' + html.escape(str(error)) + '</p><p>No visits were saved. <a href="/history/import">Try again</a>.</p>')
+    inserted = await run_in_threadpool(save_import, source, visits)
+    return page(f'<h1>Import complete</h1><p>{inserted:,} visits imported. {len(visits)-inserted:,} duplicates skipped.</p><p><a href="/history">View browsing history</a> · <a href="/history/import">Import another file</a></p>')
+
+
+def save_import(source, visits):
     device_id = uuid.uuid5(uuid.NAMESPACE_URL, 'forgetfulme:import:' + source.casefold())
     with connect() as db:
         db.execute('INSERT INTO browser_devices(id,name,token_hash,revoked) VALUES (%s,%s,%s,true) ON CONFLICT(id) DO NOTHING', (device_id, 'Import: ' + source, hashlib.sha256(secrets.token_bytes(32)).hexdigest()))
-        inserted = 0
-        for visit in visits:
-            inserted += db.execute('INSERT INTO browser_visits(device_id,event_id,url,title,visited_at) VALUES (%s,%s,%s,%s,%s) ON CONFLICT(device_id,event_id) DO NOTHING', (device_id, visit.event_id, visit.url, visit.title, visit.visited_at)).rowcount
+        # Stage validated entries with COPY, then deduplicate in one atomic transaction.
+        db.execute('CREATE TEMP TABLE import_visits (event_id text, url text, title text, visited_at timestamptz) ON COMMIT DROP')
+        with db.cursor().copy('COPY import_visits (event_id,url,title,visited_at) FROM STDIN') as copy:
+            for visit in visits:
+                copy.write_row((visit.event_id, visit.url, visit.title, visit.visited_at))
+        inserted = db.execute('INSERT INTO browser_visits(device_id,event_id,url,title,visited_at) SELECT %s,event_id,url,title,visited_at FROM import_visits ON CONFLICT(device_id,event_id) DO NOTHING', (device_id,)).rowcount
         db.execute('UPDATE browser_devices SET last_seen=now() WHERE id=%s', (device_id,))
-    return page(f'<h1>Import complete</h1><p>{inserted:,} visits imported. {len(visits)-inserted:,} duplicates skipped.</p><p><a href="/history">View browsing history</a> · <a href="/history/import">Import another file</a></p>')
+    return inserted

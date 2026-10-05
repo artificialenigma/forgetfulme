@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from app.browser_history import Visit
 
 MAX_BYTES = 100 * 1024 * 1024
-MAX_ROWS = 10000
+MAX_ROWS = 1_000_000
 
 
 def parse_export(content: bytes, filename: str) -> list[Visit]:
@@ -26,7 +26,7 @@ def parse_export(content: bytes, filename: str) -> list[Visit]:
         for row in reader:
             rows.append(row)
             if len(rows) > MAX_ROWS:
-                raise ValueError('A file can contain at most 10,000 visits.')
+                raise ValueError('A file can contain at most 1,000,000 visits.')
     elif filename.lower().endswith('.json'):
         try:
             rows = json.loads(text)
@@ -48,8 +48,10 @@ def parse_export(content: bytes, filename: str) -> list[Visit]:
             raise ValueError('JSON must be a visits list, an object with a visits list, or a Safari history export.')
     else:
         raise ValueError('Choose a .csv or .json browsing history export.')
-    if not rows or len(rows) > MAX_ROWS:
-        raise ValueError('A file must contain between 1 and 10,000 visits.')
+    if not rows:
+        raise ValueError('The file contains no history entries.')
+    if len(rows) > MAX_ROWS:
+        raise ValueError(f'The file contains {len(rows):,} entries; the limit is {MAX_ROWS:,}. Split it into smaller files.')
     visits = []
     for number, row in enumerate(rows, 1):
         try:

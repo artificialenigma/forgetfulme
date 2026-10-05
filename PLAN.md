@@ -131,3 +131,7 @@ Accept history files up to 100 MiB, with 64 KiB multipart overhead allowance. Re
 ## Safari history JSON — 2026-10-05
 
 Accept Safari history schema version 1 with metadata and history arrays. Convert integer Unix time_usec to UTC using exact microsecond arithmetic, handle missing titles, and retain existing file/row validation and source-level deduplication. One record per exported entry; aggregate counts, load-failure flags and redirect metadata are not retained. ZIP archives and Safari database files are not accepted by this JSON importer.
+
+## Large history imports — 2026-10-05
+
+Raise the file import entry limit to 1,000,000 while retaining the 100 MiB byte cap. Validate before saving, stage entries using PostgreSQL COPY, then insert with conflict deduplication in the same transaction. Distinguish empty exports from oversized exports and show the actual count when oversized.

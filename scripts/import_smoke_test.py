@@ -42,6 +42,10 @@ try:
     assert 'No visits were saved' in upload(json.dumps(safari).encode(),'History.json')
     safari['metadata']['schema_version'] = 2
     assert 'Unsupported Safari export' in upload(json.dumps(safari).encode(),'History.json')
+    large = {'metadata': {'browser_name':'Safari','data_type':'history','schema_version':1}, 'history':[{'url':f'https://example.com/large-safari/{i}','time_usec':1774258180789274+i} for i in range(10001)]}
+    assert '10,001 visits imported' in upload(json.dumps(large).encode(),'History.json')
+    assert '10,001 duplicates skipped' in upload(json.dumps(large).encode(),'History.json')
+    assert 'The file contains no history entries' in upload(b'{"visits": []}','history.json')
     bad = b'url,title,visited_at\nhttps://example.com/must-not-save,Good,2026-01-02T12:00:00Z\njavascript:alert(1),Bad,2026-01-02T12:00:00Z\n'
     assert 'No visits were saved' in upload(bad)
     assert 'must-not-save' not in read('/history')

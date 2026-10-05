@@ -306,3 +306,9 @@ Validation: core Docker services healthy after rebuild. Full import/ingestion sm
 ## 2026-10-05 — Refresh running Docker stack
 
 User requested “update the docker”. Rebuilt/recreated the core and Archive Desk services from the latest source with Compose --build --wait and reloaded Caddy. All long-running services reported healthy; migrations/vault initialization completed. HTTP readiness returned ready. Running app includes Safari JSON import and the 100 MiB upload limit. Persistent volumes retained.
+
+## 2026-10-05 — Remove 10,000-entry import blocker
+
+User reported the 1–10,000 visits validation error for a Safari backup. Raised the entry cap to 1,000,000, retained the 100 MiB byte cap, and updated the import page/README. Replaced per-row inserts for file imports with temporary-table COPY and one deduplicating INSERT inside a transaction. Empty-file and oversized-file errors now differ; oversized errors show the count. Added synthetic 10,001-entry Safari import and repeat-import checks.
+
+Validation: rebuilt Docker and confirmed healthy services. Import smoke tests passed including 10,001-entry Safari first import and duplicate retry, empty-file feedback, previous format/validation checks and >6 MiB upload. Synthetic fixtures deleted. Parsing and database work run in the thread pool so imports do not hold the async request loop during validation/saving.
