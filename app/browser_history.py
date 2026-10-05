@@ -30,7 +30,7 @@ def page(body):
     if heading:
         body = body[:heading.start()] + body[heading.end():]
     active = '/history/capture' if title == 'Page scraping' else '/devices' if title in {'Browser devices','Device created'} else '/history/import'
-    body = body.replace('<table>', '<div class="table-scroll"><table>').replace('</table>', '</table></div>')
+    body = re.sub(r'<table(?: [^>]*)?>', lambda match: '<div class="table-scroll">' + match.group(0), body).replace('</table>', '</table></div>')
     return HTMLResponse(render_page('<section class="panel content-panel">' + body + '</section>', title, active))
 
 
@@ -216,10 +216,24 @@ def capture_status(request: Request):
     body = '<h1>Page scraping</h1><p>The worker fetches each unique imported or collected URL, extracts readable public HTML/text into Markdown, and saves successful captures in <strong>Forgetful Me/Pages</strong> in the vault. Visit indexes remain in Browsing History. Crawl4AI is used for HTML extraction when configured, with local extraction as a fallback.</p><p>'
     body += ' · '.join(html.escape(row['state']) + ': ' + f"{row['count']:,}" for row in counts) + '</p>'
     body += '<p>Refresh this page for progress. Local/private pages, robots restrictions, unavailable pages and unreadable content are reported as blocked. Temporary failures retry up to three times. Login-only or JavaScript-only content and PDFs need a separate capture path; browser cookies are never sent. Captures reflect the page now, not necessarily what you saw when visiting.</p>'
-    body += f'<form method="post" action="/history/capture/retry"><input type="hidden" name="csrf" value="{csrf(request)}"><button>Retry failed pages</button></form><p><a href="/vault">Open Obsidian vault</a></p><table><tr><th>Page</th><th>Status</th><th>Result</th></tr>'
+    body += f'<div class="capture-actions"><form method="post" action="/history/capture/retry"><input type="hidden" name="csrf" value="{csrf(request)}"><button>Retry failed pages</button></form><a class="button" href="/history/capture">Refresh status</a><a class="button" href="/vault">Open Obsidian vault</a></div><h2>Recent captures and issues</h2><p class="muted">Up to 30 results · issues first, then completed captures.</p><table class="capture-table"><caption class="sr-only">Page capture results and failure reasons</caption><thead><tr><th scope="col">Page</th><th scope="col">Status</th><th scope="col">Capture result</th></tr></thead><tbody>'
+    from app.dashboard import badge
     for row in recent:
-        body += '<tr><td>' + html.escape(row['url']) + '</td><td>' + html.escape(row['state']) + '</td><td>' + html.escape(row['error'] or ((row['note_path'] or '') + (' · ' + row['extractor'] if row['extractor'] else ''))) + '</td></tr>'
-    return page(body + '</table>')
+        url = html.escape(row['url'], quote=True)
+        host = html.escape(urlsplit(row['url']).hostname or 'Website')
+        tone = {'complete':'good','blocked':'neutral','retry':'warn','failed':'bad'}[row['state']]
+        label = {'complete':'Captured','blocked':'Blocked','retry':'Retry queued','failed':'Failed'}[row['state']]
+        if row['state'] == 'complete':
+            detail = '<strong>Saved to Obsidian</strong><small>' + html.escape(row['extractor'] or 'Markdown extraction') + ' · Forgetful Me/Pages</small>'
+            full = html.escape(row['note_path'] or '',quote=True)
+        else:
+            detail = '<span>' + html.escape(row['error'] or 'Waiting for another attempt') + '</span>'
+            full = html.escape(row['error'] or '',quote=True)
+        body += f'<tr><td><a class="capture-title" href="{url}" title="{url}" target="_blank" rel="noopener noreferrer">{host}</a><span class="capture-url" title="{url}">{url}</span></td><td class="capture-state">{badge(label,tone)}</td><td class="capture-result" title="{full}">{detail}</td></tr>'
+    if not recent:
+        body += '<tr><td colspan="3" class="empty">No capture results yet. Queued pages will appear here after the worker processes them.</td></tr>'
+    return page(body + '</tbody></table>')
+
 
 
 @router.post('/history/capture/retry', dependencies=[Depends(admin)])

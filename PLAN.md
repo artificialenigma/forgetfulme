@@ -159,3 +159,7 @@ Reuse the existing crawl4ai container (installed 0.8.6) on a dedicated network s
 ## Unified app UI — 2026-10-05
 
 Use one dashboard-based app shell and stylesheet for every authenticated page, including result/error pages and the vault wrapper. Shared navigation covers Overview, History, Devices, Import, Page scraping and Vault with active-state labels; common typography/forms/tables/buttons and Maldives times. Login shares visual tokens/components without exposing authenticated workspace navigation. Embedded Obsidian remains its own desktop inside the shared frame.
+
+## Capture table presentation — 2026-10-05
+
+Present capture results in fixed page/status/result columns with semantic headers, hostname links, bounded URL previews, colored statuses and readable saved-note/error descriptions. Show full URL/path via hover text, keep mobile columns readable through horizontal scrolling, and retain shared layout/styles.

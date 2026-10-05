@@ -22,6 +22,11 @@ for path in paths:
     assert f'href="{path}" class="active" aria-current="page"' in body
     for destination in paths: assert f'href="{destination}"' in body
     assert 'automatic note export is still planned' not in body
+    if path=='/history/capture':
+        assert '<table class="capture-table">' in body and '<thead>' in body and '<tbody>' in body
+        assert 'Capture result' in body and 'Refresh status' in body
+        if '<tr><td colspan="3"' not in body:
+            assert 'capture-title' in body and 'capture-url' in body and 'class="badge ' in body
     if path=='/vault': assert '<iframe src="/obsidian/"' in body
     if path=='/history/import': csrf=re.search(r'name="csrf" value="([a-f0-9]+)"',body)[1]
 boundary='unified-ui-test'
