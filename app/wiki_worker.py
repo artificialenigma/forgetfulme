@@ -2,6 +2,7 @@
 import logging
 import time
 from app.db import connect
+from app.ai_provider import test_pending, settings
 from app.wiki import refresh_sources, rebuild_indexes, synthesize_one, answer_one
 
 
@@ -20,8 +21,9 @@ def main():
                 rebuild_indexes()
                 indexed_at = time.monotonic()
             heartbeat()
-            if not answer_one():
-                synthesize_one()
+            if not test_pending() and settings()['enabled']:
+                if not answer_one():
+                    synthesize_one()
             heartbeat()
         except Exception:
             # Never include source text, browsing URLs, credentials or model output.

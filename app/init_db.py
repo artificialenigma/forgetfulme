@@ -1,6 +1,14 @@
 from app.db import connect
 
 SCHEMA = """
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE TABLE IF NOT EXISTS ai_settings (
+ id integer PRIMARY KEY CHECK(id=1), provider text NOT NULL CHECK(provider IN ('ollama','openai')),
+ base_url text NOT NULL, model text NOT NULL, enabled boolean NOT NULL DEFAULT true,
+ temperature double precision NOT NULL DEFAULT 0, max_tokens integer NOT NULL DEFAULT 1400,
+ context_size integer NOT NULL DEFAULT 8192, api_key bytea,
+ test_state text NOT NULL DEFAULT 'untested', test_message text, updated_at timestamptz NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS jobs (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     kind text NOT NULL CHECK (kind = 'maintenance'),

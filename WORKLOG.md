@@ -368,3 +368,11 @@ Validation: Docker core services healthy after rebuild. Shared UI HTTP checks pa
 **Deployment/validation:** Rebuilt Docker, backfilled 506 existing successful captures into the linked source library, and verified the first real local-model summary. Final validation results are recorded below after the running app checks.
 
 **Final checks:** Docker services healthy; 511 source records indexed at verification, with 16 concept and 12 entity notes generated so far. Wiki ownership/reviewed-note preservation, safe links, malformed synthesis and citation allowlists passed. Shared page frame/navigation, login redirects and question authentication/CSRF checks passed over HTTP. Live Ollama Q&A successfully produced citations and a saved vault note; temporary test artifacts were removed. AI synthesis continues in the background. Visual browser automation was unavailable from the earlier UI-policy restriction, so UI verification used authenticated HTTP rendering. README and PLAN describe setup, server migration, bounded retrieval and draft limitations.
+
+## 2026-10-06 — AI provider settings in the app
+
+**Conversation:** User requested entering the AI provider base URL and settings inside Forgetful Me.
+
+**Implementation:** Added shared-navigation AI settings with Ollama/OpenAI-compatible selection, URL/model/key and generation limits, processing pause, queued connection test and failed-summary retry. Settings persist in PostgreSQL and are read at each job. Keys use pgcrypto encryption, are never displayed back, and are cleared when changing endpoint unless replaced. Auth/CSRF checks protect mutations, and AI HTTP redirects are refused. Updated the worker, knowledge page and documentation for configurable local/cloud processing.
+
+**Validation:** Provider adapter tests passed for Ollama and OpenAI-compatible request/response formats, authorization headers, endpoint validation and truncated-output rejection. Live authenticated settings tests passed saving, pause, blank-key retention, secret redaction, credential clearing on endpoint switch, CSRF rejection and a real queued Ollama JSON connection test; the original Ollama configuration was restored. Unified page navigation checks passed. Cloud adapters were verified with fixtures; no external cloud account/key was supplied or invoked. Docker was rebuilt for final labels/styling.

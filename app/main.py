@@ -38,7 +38,7 @@ def authenticate(request: Request, credentials: Annotated[HTTPBasicCredentials |
 
 def login_destination(value):
     # Only known pages are accepted: never redirect to user-provided external URLs.
-    return value if value in {"/", "/devices", "/history", "/history/import", "/history/capture", "/vault", "/vault/wiki"} else "/"
+    return value if value in {"/", "/devices", "/history", "/history/import", "/history/capture", "/vault", "/vault/wiki", "/settings/ai"} else "/"
 
 
 def login_page(error="", destination="/"):
@@ -148,3 +148,6 @@ app.include_router(history_router)
 
 from app.wiki_routes import router as wiki_router
 app.include_router(wiki_router)
+
+from app.ai_routes import router as ai_router
+app.include_router(ai_router)

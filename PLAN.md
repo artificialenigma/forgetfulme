@@ -174,3 +174,7 @@ Approved provider: **local Ollama**. Adapt the source/wiki separation, native wi
 - Provide authenticated, CSRF-protected queued Q&A with bounded lexical retrieval over compiled summaries and answers grounded in up to three source excerpts. Save cited answers to the vault.
 - Keep the database/vault backed up by the current stack. When moving to a server, install/reach Ollama there, configure its private URL/model, and back up model files separately.
 - Advanced graph retrieval, global consistency checks and full-vault reasoning remain future work.
+
+## 2026-10-06 — In-app AI configuration
+
+Add authenticated, CSRF-protected AI settings for one active Ollama or OpenAI-compatible provider: base URL, model, encrypted API key, temperature, output tokens, Ollama context size and processing toggle. Persist in PostgreSQL; apply at the next job without restarting Docker. Save/test queues a synthetic JSON test through the wiki worker. Changing endpoint clears old credentials, redirects are refused, and failed summaries can be requeued. Cloud processing follows the selected endpoint; native non-compatible APIs need a compatible gateway. Administrator-password changes require re-entering stored provider keys.

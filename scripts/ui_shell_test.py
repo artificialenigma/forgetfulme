@@ -14,7 +14,7 @@ with client.open(base+'/login',timeout=10) as response:
     csrf=re.search(r'name="csrf" value="([a-f0-9]+)"',login)[1]
 data=urllib.parse.urlencode({'username':env['ADMIN_USER'],'password':env['ADMIN_PASSWORD'],'csrf':csrf}).encode()
 client.open(base+'/login',data=data,timeout=10).close()
-paths=['/','/history','/devices','/history/import','/history/capture','/vault','/vault/wiki']
+paths=['/','/history','/devices','/history/import','/history/capture','/vault','/vault/wiki','/settings/ai']
 for path in paths:
     with client.open(base+path,timeout=10) as response: body=response.read().decode()
     assert '/static/dashboard.css' in body and '<style>' not in body
