@@ -30,7 +30,7 @@ def export_pending(vault=Path('/vault')):
             rows = db.execute('SELECT v.id,v.url,v.title,v.visited_at,d.name FROM browser_visits v JOIN browser_devices d ON d.id=v.device_id WHERE v.id >= %s AND v.id < %s AND visited_at >= %s AND visited_at < %s ORDER BY visited_at,id', (bucket*1000,(bucket+1)*1000,start,start+timedelta(days=1))).fetchall()
             directory = vault / 'Forgetful Me' / 'Browsing History' / day.strftime('%Y/%m')
             directory.mkdir(parents=True, exist_ok=True)
-            destination = directory / f'{day.isoformat()}-{bucket:06d}.md'
+            destination = directory / f'{day.isoformat()}-{bucket:08d}.md'
             lines = [f'# Browsing history · {day.isoformat()}', '', '> Managed by Forgetful Me. This note is rebuilt automatically; keep personal annotations in a separate note.', '', 'Times: Maldives (UTC+05:00).', '']
             for row in rows:
                 url = quote(row['url'], safe=':/?#@!$&\'*=+;,%~-._')
