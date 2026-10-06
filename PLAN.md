@@ -184,3 +184,7 @@ Add authenticated, CSRF-protected AI settings for one active Ollama or OpenAI-co
 User requested clearing gibberish, then directed stopping downloads and leaving browsing uploads for later, followed by requesting a clean vault and importing/copying a local vault. Clear stack note content only after verified vault/database backups; preserve desktop configuration and existing browsing records. Retire old capture exports, pause vault automation persistently and pause AI. Do not rebuild old notes.
 
 Provide an authenticated, CSRF-protected ZIP import for notes/folders/attachments with no overwrite, hidden metadata exclusion, path/symlink checks and size/count limits. Offer Docker folder copy for large vaults. Import must not enable downloads or AI; personal imported notes must remain user-owned. Future generated archives use readable source filenames and simple indexes, with automatic concept/entity expansion disabled.
+
+## 2026-10-06 — Model discovery from provider base URL
+
+Add Save and fetch models to AI settings. Persist connection details and pause AI during discovery, queue a bounded GET catalog request in the wiki worker, and offer the returned IDs in a selector alongside manual model entry. Use Ollama /api/tags or compatible /models, authenticate with the encrypted key, refuse redirects, limit response/list sizes and invalidate catalogs when endpoint/credentials change. Discovery must work while vault processing is paused and must not download models or transmit notes.

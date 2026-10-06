@@ -22,12 +22,18 @@ def render_settings(request, error='', values=None):
         body+=f'<option value="{value}"'+(' selected' if config['provider']==value else '')+'>'+label+'</option>'
     body+='</select><label for="base_url">Base URL</label>'
     body+=f'<input id="base_url" name="base_url" type="url" value="{escape(config["base_url"])}" required maxlength="2000"><p>Ollama: http://host.docker.internal:11434. OpenAI-compatible: include the API prefix, for example https://api.openai.com/v1. The app adds /api/chat or /chat/completions. Inside Docker, localhost points to the container; use host.docker.internal for your computer.</p>'
-    body+=f'<label for="model">Model</label><input id="model" name="model" value="{escape(config["model"])}" required maxlength="200">'
+    models=config.get('models') or []
+    body+=f'<label for="model">Model name</label><input id="model" name="model" value="{escape(config["model"])}" maxlength="200">'
+    if models:
+        body+='<label for="available_model">Available models</label><select id="available_model" name="available_model"><option value="">Keep the model name above</option>'
+        body+=''.join('<option value="'+escape(model)+'">'+escape(model)+'</option>' for model in models)+'</select><p>Select a fetched model to replace the model name when saving.</p>'
+    body+='<p role="status">'+escape(config.get('models_message') or ('Fetching models… refresh this page shortly.' if config.get('models_state')=='pending' else 'Enter your provider base URL and API key, then fetch its available models.'))+'</p>'
+
     body+='<label for="api_key">API key (optional for local providers)</label><input id="api_key" name="api_key" type="password" autocomplete="new-password" maxlength="2000" placeholder="Leave blank to keep the saved key">'
     body+='<p>'+('A key is stored.' if config.get('has_key') else 'No key is stored.')+' Keys are encrypted in the database.</p><label><input type="checkbox" name="clear_key" value="1"> Remove saved key</label>'
     for name,label,minimum,maximum,step in [('temperature','Temperature',0,2,'0.1'),('max_tokens','Maximum output tokens',256,4096,'1'),('context_size','Context size (Ollama only)',2048,32768,'1')]:
         body+=f'<label for="{name}">{label}</label><input type="number" id="{name}" name="{name}" min="{minimum}" max="{maximum}" step="{step}" value="{escape(config[name])}" required>'
-    body+='<label><input type="checkbox" name="enabled" value="1"'+(' checked' if config['enabled'] else '')+'> Enable AI processing</label><p>Pause keeps queued work pending. Switching providers applies only to future work; completed notes are preserved. For cloud providers, use HTTPS. Models must support JSON output.</p><button name="action" value="save">Save settings</button> <button name="action" value="test">Save and test connection</button></form></section>'
+    body+='<label><input type="checkbox" name="enabled" value="1"'+(' checked' if config['enabled'] else '')+'> Enable AI processing</label><p>Fetching models saves connection details and pauses AI until you choose a model and save. No model is downloaded. Pause keeps queued work pending. Switching providers applies only to future work; completed notes are preserved. For cloud providers, use HTTPS. Models must support JSON output.</p><button name="action" value="models" formnovalidate>Save and fetch models</button> <button name="action" value="save">Save settings</button> <button name="action" value="test">Save and test connection</button></form></section>'
     body+='<section class="panel content-panel"><h2>Connection test</h2><p>'+escape(config.get('test_state','untested'))+'</p><p>'+escape(config.get('test_message') or 'Use Save and test connection, then refresh to see the result. The worker sends only a short test prompt.')+'</p><a class="button" href="/settings/ai">Refresh status</a></section>'
     body+=f'<section class="panel content-panel"><h2>Retry failed summaries</h2><p>After fixing your provider settings, requeue failed source summaries. Reviewed and completed notes stay protected.</p><form method="post" action="/settings/ai/retry"><input type="hidden" name="csrf" value="{token}"><button>Retry failed summaries</button></form></section>'
     return HTMLResponse(render_page(body,'AI settings','/settings/ai'),status_code=400 if error else 200)
@@ -43,11 +49,17 @@ async def save(request: Request):
     data=await form(request)
     current=settings()
     try:
-        config=validate(dict(provider=data.get('provider',[''])[0],base_url=data.get('base_url',[''])[0],model=data.get('model',[''])[0],temperature=float(data.get('temperature',['0'])[0]),max_tokens=int(data.get('max_tokens',['1400'])[0]),context_size=int(data.get('context_size',['8192'])[0]),enabled=data.get('enabled')==['1']))
+        fetching=data.get('action')==['models']
+        selected='' if fetching else data.get('available_model',[''])[0]
+        if selected and selected not in (current.get('models') or []): raise ValueError('Choose a listed model')
+        model=selected or data.get('model',[''])[0]
+        if fetching and not model.strip(): model='Select a model'
+        config=validate(dict(provider=data.get('provider',[''])[0],base_url=data.get('base_url',[''])[0],model=model,temperature=float(data.get('temperature',['0'])[0]),max_tokens=int(data.get('max_tokens',['1400'])[0]),context_size=int(data.get('context_size',['8192'])[0]),enabled=data.get('enabled')==['1'] and not fetching))
         key=data.get('api_key',[''])[0]
         if len(key)>2000 or any(ord(c)<32 for c in key): raise ValueError('API key contains invalid characters or is too long')
         changed_destination=config['provider']!=current['provider'] or config['base_url']!=current['base_url']
         clear=data.get('clear_key')==['1'] or changed_destination
+        if selected and changed_destination: raise ValueError('Fetch models for the new endpoint first')
         # Changing endpoint never forwards an old provider's credential to the new one.
         with connect() as db:
             db.execute("""INSERT INTO ai_settings(id,provider,base_url,model,enabled,temperature,max_tokens,context_size,api_key,test_state)
@@ -57,6 +69,8 @@ async def save(request: Request):
                 api_key=CASE WHEN %s<>'' THEN excluded.api_key WHEN %s THEN NULL ELSE ai_settings.api_key END,
                 test_state=excluded.test_state,test_message=NULL,updated_at=now()""",
                 (config['provider'],config['base_url'],config['model'],config['enabled'],config['temperature'],config['max_tokens'],config['context_size'],key,key,secret_key(),'pending' if data.get('action')==['test'] else 'untested',key,clear))
+            if fetching or changed_destination or key or data.get('clear_key')==['1']:
+                db.execute("UPDATE ai_settings SET models='[]'::jsonb,models_state=%s,models_message=NULL,models_fetched_at=NULL WHERE id=1",('pending' if fetching else 'untested',))
     except (ValueError,OverflowError):
         return render_settings(request,'Check the provider, URL, model and numeric limits. URLs cannot contain credentials, query strings or fragments; keys cannot contain control characters.')
     return RedirectResponse('/settings/ai?saved=1',status_code=303)

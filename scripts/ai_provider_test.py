@@ -37,3 +37,19 @@ with patch('urllib.request.build_opener',return_value=Opener()):
         raise AssertionError('Incomplete response accepted')
     except ValueError: pass
 print('AI endpoint validation, request formats, authentication and incomplete-output checks passed')
+from app.ai_provider import fetch_models
+config={**config,'provider':'ollama'}
+result={'models':[{'name':'qwen2.5:3b'},{'model':'qwen2.5:3b'},{'name':'bad\nname'},{}]}
+with patch('urllib.request.build_opener',return_value=Opener()):assert fetch_models(config)==['qwen2.5:3b']
+assert captured[-1].full_url.endswith('/api/tags')
+assert captured[-1].get_method()=='GET'
+config={**config,'provider':'openai'}
+result={'data':[{'id':'model-b'},{'id':'model-a'},{'id':'model-b'},{}]}
+with patch('urllib.request.build_opener',return_value=Opener()):assert fetch_models(config)==['model-a','model-b']
+assert captured[-1].full_url.endswith('/models')
+assert captured[-1].get_header('Authorization')=='Bearer test-key'
+result={'data':'invalid'}
+with patch('urllib.request.build_opener',return_value=Opener()):
+    try:fetch_models(config);raise AssertionError('Invalid catalog accepted')
+    except ValueError:pass
+print('Ollama/OpenAI model catalog formats, deduplication and malformed catalogs passed')

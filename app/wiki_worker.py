@@ -2,7 +2,7 @@
 import logging
 import time
 from app.db import connect
-from app.ai_provider import test_pending, settings
+from app.ai_provider import test_pending, settings, discover_pending
 from app.wiki import refresh_sources, rebuild_indexes, synthesize_one, answer_one
 
 
@@ -19,7 +19,8 @@ def main():
             with connect() as db:
                 enabled=db.execute("SELECT automation_enabled FROM vault_controls WHERE id=1").fetchone()["automation_enabled"]
             if not enabled:
-                test_pending()
+                if not discover_pending():
+                    test_pending()
                 time.sleep(5)
                 continue
             refresh_sources()
@@ -27,7 +28,7 @@ def main():
                 rebuild_indexes()
                 indexed_at = time.monotonic()
             heartbeat()
-            if not test_pending() and settings()['enabled']:
+            if not discover_pending() and not test_pending() and settings()['enabled']:
                 if not answer_one():
                     synthesize_one()
             heartbeat()

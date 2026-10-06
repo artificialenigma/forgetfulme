@@ -199,3 +199,9 @@ docker compose exec --user root obsidian chown -R 10001:10001 /vault/My-local-va
 Use a new destination folder to avoid merging or overwriting existing notes. Copy only notes and attachments; omit `.obsidian` if using this method so local plugins/settings stay separate. Back up your local vault before reorganizing it. The shared desktop opens `/vault`; your imported folder appears inside it.
 
 Automatic downloading, history exports and wiki generation are **paused persistently** after cleanup, including across Docker restarts. Importing a local vault does not enable them. Use **Enable automatic processing** on Import vault when ready for browsing data, and enable AI separately in AI settings if you want summaries. Imported personal notes are preserved and are not automatically sent to AI. The generated archive now uses readable filenames and simple library/website/history indexes; automatic concept/entity expansion is disabled.
+
+### Discover available models
+
+In **AI settings**, enter the provider type, base URL and optional API key, then select **Save and fetch models**. Refresh after a few seconds and choose from **Available models**, then save your selection. Fetching works while vault automation is paused and keeps AI paused until you choose a model and enable processing. It lists models without downloading any model or sending notes/questions. Manual model names remain available for providers without catalog support.
+
+Ollama discovery uses [`GET /api/tags`](https://docs.ollama.com/api/tags); OpenAI-compatible discovery uses [`GET /models`](https://developers.openai.com/api/reference/resources/models/methods/list) under your API prefix. Results are cached in the database and cleared when the endpoint or credentials change. A listed model may still lack JSON/chat support; use the connection test after selecting it. Native non-compatible APIs need a compatible gateway.

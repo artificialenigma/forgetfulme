@@ -15,7 +15,7 @@ def secret_key():
 def settings(include_key=False):
     with connect() as db:
         fields = ',pgp_sym_decrypt(api_key,%s) AS key' if include_key else ',(api_key IS NOT NULL) AS has_key'
-        row = db.execute('SELECT provider,base_url,model,enabled,temperature,max_tokens,context_size,test_state,test_message'+fields+' FROM ai_settings WHERE id=1', (secret_key(),) if include_key else ()).fetchone()
+        row = db.execute('SELECT provider,base_url,model,enabled,temperature,max_tokens,context_size,test_state,test_message,models,models_state,models_message,models_fetched_at'+fields+' FROM ai_settings WHERE id=1', (secret_key(),) if include_key else ()).fetchone()
     return row or dict(provider='ollama',base_url=os.environ.get('OLLAMA_URL','http://host.docker.internal:11434'),model=os.environ.get('OLLAMA_MODEL','qwen2.5:3b'),enabled=True,temperature=0.0,max_tokens=1400,context_size=8192,has_key=False,key=None,test_state='untested',test_message=None)
 
 
@@ -82,4 +82,37 @@ def test_pending():
         except Exception:
             state,message='failed','Connection test failed. Check the base URL, API key, model and JSON support; inspect provider availability.'
         db.execute('UPDATE ai_settings SET test_state=%s,test_message=%s WHERE id=1',(state,message))
+    return True
+
+
+def fetch_models(config):
+    path='/api/tags' if config['provider']=='ollama' else '/models'
+    headers={'Accept':'application/json'}
+    if config.get('key'): headers['Authorization']='Bearer '+config['key']
+    request=urllib.request.Request(config['base_url'].rstrip('/')+path,headers=headers)
+    opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),NoRedirect())
+    with opener.open(request,timeout=15) as response: content=response.read(1024*1024+1)
+    if len(content)>1024*1024: raise ValueError('Model list too large')
+    response=json.loads(content)
+    items=response.get('models') if config['provider']=='ollama' else response.get('data')
+    if not isinstance(items,list): raise ValueError('Invalid model catalog')
+    names=set()
+    for item in items:
+        if not isinstance(item,dict): continue
+        name=(item.get('name') or item.get('model')) if config['provider']=='ollama' else item.get('id')
+        if isinstance(name,str) and name.strip() and len(name)<=200 and not any(ord(c)<32 for c in name): names.add(name)
+    return sorted(names)[:1000]
+
+
+def discover_pending():
+    with connect() as db:
+        row=db.execute("SELECT id FROM ai_settings WHERE id=1 AND models_state='pending' FOR UPDATE SKIP LOCKED").fetchone()
+        if not row: return False
+        try:
+            models=fetch_models(settings(include_key=True))
+            state='success'
+            message=f'Found {len(models)} models. Choose one and save settings.' if models else 'The provider returned no available models. Install a model or enter its name manually.'
+        except Exception:
+            models=[];state='failed';message='Could not fetch models. Check the base URL, provider type, credentials and /models or /api/tags support. Manual model entry is still available.'
+        db.execute('UPDATE ai_settings SET models=%s::jsonb,models_state=%s,models_message=%s,models_fetched_at=now() WHERE id=1',(json.dumps(models),state,message))
     return True

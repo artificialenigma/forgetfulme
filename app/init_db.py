@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS ai_settings (
  context_size integer NOT NULL DEFAULT 8192, api_key bytea,
  test_state text NOT NULL DEFAULT 'untested', test_message text, updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS models jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS models_state text NOT NULL DEFAULT 'untested';
+ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS models_message text;
+ALTER TABLE ai_settings ADD COLUMN IF NOT EXISTS models_fetched_at timestamptz;
 CREATE TABLE IF NOT EXISTS vault_controls (
  id integer PRIMARY KEY CHECK(id=1), automation_enabled boolean NOT NULL DEFAULT true
 );
