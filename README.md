@@ -181,3 +181,21 @@ Open **AI settings** (`/settings/ai`) to select Ollama or an OpenAI-compatible C
 Settings persist in PostgreSQL and apply to the next wiki job without a restart. Saved settings take precedence over the initial Ollama environment defaults. Configure temperature, output limit and Ollama context size; pause/resume processing; use **Save and test connection** and refresh for a queued test result; retry failed summaries after fixing configuration. The connection test sends a short synthetic prompt only. Cloud settings cause subsequent source excerpts and questions to be sent to that selected endpoint; existing compiled notes remain preserved.
 
 Keys are encrypted with PostgreSQL pgcrypto using a key derived from the app’s administrator password. They are never returned in HTML. Leave the password field blank to retain a saved key; remove it explicitly or replace it. Changing the provider or base URL clears the old credential unless a new key is supplied. Redirects are refused to prevent credential forwarding. Keep `.env` private and use HTTPS for cloud endpoints. If you change `ADMIN_PASSWORD`, re-enter the provider API key because existing ciphertext will no longer decrypt. Database backups include encrypted provider credentials.
+
+## Clean vault and importing an existing local vault
+
+The vault was cleared on 2026-10-06 at the user’s request after a verified local backup. Previous notes are preserved in `backups/vault-before-reorganization-2026-10-06.tar.gz`, and database state in `backups/database-before-vault-reorganization-2026-10-06.sql`. These private files are ignored by Git. Existing browsing records remain in the app; old captures were retired rather than downloaded again. A new browsing import can requeue those specific URLs.
+
+Open **Import vault** (`/vault/import`), ZIP your local Obsidian vault folder and upload it. The importer copies Markdown notes, folders and attachments into the stack vault, removes a single enclosing packaging folder, skips existing files, and excludes hidden metadata such as `.obsidian`, `.git`, `.trash` and macOS ZIP metadata. It never installs local plugins or changes the local vault. ZIP limits are 100 MiB compressed, 500 MiB expanded and 10,000 entries; unsafe paths, symlinks, encrypted ZIPs and duplicate destinations are rejected. Existing notes are never overwritten, and file contents are validated in staging before copying.
+
+For a larger vault, copy its contents to a new folder in the stack vault through Docker instead of uploading a ZIP. Replace the source path with your real local vault folder:
+
+```sh
+docker compose exec --user root obsidian mkdir -p /vault/My-local-vault
+docker compose cp "/absolute/path/to/Local Vault/." obsidian:/vault/My-local-vault/
+docker compose exec --user root obsidian chown -R 10001:10001 /vault/My-local-vault
+```
+
+Use a new destination folder to avoid merging or overwriting existing notes. Copy only notes and attachments; omit `.obsidian` if using this method so local plugins/settings stay separate. Back up your local vault before reorganizing it. The shared desktop opens `/vault`; your imported folder appears inside it.
+
+Automatic downloading, history exports and wiki generation are **paused persistently** after cleanup, including across Docker restarts. Importing a local vault does not enable them. Use **Enable automatic processing** on Import vault when ready for browsing data, and enable AI separately in AI settings if you want summaries. Imported personal notes are preserved and are not automatically sent to AI. The generated archive now uses readable filenames and simple library/website/history indexes; automatic concept/entity expansion is disabled.

@@ -178,3 +178,9 @@ Approved provider: **local Ollama**. Adapt the source/wiki separation, native wi
 ## 2026-10-06 — In-app AI configuration
 
 Add authenticated, CSRF-protected AI settings for one active Ollama or OpenAI-compatible provider: base URL, model, encrypted API key, temperature, output tokens, Ollama context size and processing toggle. Persist in PostgreSQL; apply at the next job without restarting Docker. Save/test queues a synthetic JSON test through the wiki worker. Changing endpoint clears old credentials, redirects are refused, and failed summaries can be requeued. Cloud processing follows the selected endpoint; native non-compatible APIs need a compatible gateway. Administrator-password changes require re-entering stored provider keys.
+
+## 2026-10-06 — Clean personal vault and local-vault import
+
+User requested clearing gibberish, then directed stopping downloads and leaving browsing uploads for later, followed by requesting a clean vault and importing/copying a local vault. Clear stack note content only after verified vault/database backups; preserve desktop configuration and existing browsing records. Retire old capture exports, pause vault automation persistently and pause AI. Do not rebuild old notes.
+
+Provide an authenticated, CSRF-protected ZIP import for notes/folders/attachments with no overwrite, hidden metadata exclusion, path/symlink checks and size/count limits. Offer Docker folder copy for large vaults. Import must not enable downloads or AI; personal imported notes must remain user-owned. Future generated archives use readable source filenames and simple indexes, with automatic concept/entity expansion disabled.

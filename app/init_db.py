@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS ai_settings (
  context_size integer NOT NULL DEFAULT 8192, api_key bytea,
  test_state text NOT NULL DEFAULT 'untested', test_message text, updated_at timestamptz NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS vault_controls (
+ id integer PRIMARY KEY CHECK(id=1), automation_enabled boolean NOT NULL DEFAULT true
+);
+INSERT INTO vault_controls(id) VALUES(1) ON CONFLICT DO NOTHING;
 CREATE TABLE IF NOT EXISTS jobs (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     kind text NOT NULL CHECK (kind = 'maintenance'),

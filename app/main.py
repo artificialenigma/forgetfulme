@@ -38,7 +38,7 @@ def authenticate(request: Request, credentials: Annotated[HTTPBasicCredentials |
 
 def login_destination(value):
     # Only known pages are accepted: never redirect to user-provided external URLs.
-    return value if value in {"/", "/devices", "/history", "/history/import", "/history/capture", "/vault", "/vault/wiki", "/settings/ai"} else "/"
+    return value if value in {"/", "/devices", "/history", "/history/import", "/history/capture", "/vault", "/vault/wiki", "/settings/ai", "/vault/import"} else "/"
 
 
 def login_page(error="", destination="/"):
@@ -99,7 +99,16 @@ def desktop_auth(request: Request, credentials: Annotated[HTTPBasicCredentials |
 def vault_desktop(request: Request, credentials: Annotated[HTTPBasicCredentials | None, Depends(security)]):
     if not authorized(request, credentials):
         return RedirectResponse("/login", status_code=303)
-    return render_page('<div class="vault-actions"><p>Open <strong>Forgetful Me/Home</strong> in Obsidian for the linked source library, concepts and entities. <a href="/vault/wiki">Knowledge processing and local Q&amp;A →</a></p><a class="button" href="/obsidian/" target="_blank" rel="noopener">Open desktop in a tab ↗</a></div><section class="panel vault-panel"><iframe src="/obsidian/" title="Obsidian vault desktop" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen></iframe></section>', 'Obsidian vault', '/vault')
+    return render_page('<div class="vault-actions"><p>Your clean vault is ready for personal notes. Use Import vault to bring in your local Obsidian vault and manage automatic archive processing. <a href="/vault/wiki">Knowledge processing and local Q&amp;A →</a> · <a href="/vault/import">Import your local vault →</a></p><a class="button" href="/obsidian/" target="_blank" rel="noopener">Open desktop in a tab ↗</a></div><section class="panel vault-panel"><iframe src="/obsidian/" title="Obsidian vault desktop" allow="clipboard-read; clipboard-write; fullscreen" allowfullscreen></iframe></section>', 'Obsidian vault', '/vault')
+
+
+def markdown_files(vault: Path):
+    count = 0
+    for path, directories, files in os.walk(vault):
+        # Obsidian's own state directory holds many non-note files.
+        directories[:] = [name for name in directories if name != ".obsidian"]
+        count += sum(1 for name in files if name.endswith(".md"))
+    return count
 
 
 @app.get("/api/vault", dependencies=[Depends(authenticate)])
@@ -107,9 +116,8 @@ def vault_status():
     vault = Path("/vault")
     with connect() as db:
         progress = db.execute('SELECT count(*) FILTER (WHERE obsidian_exported_at IS NULL) AS pending, count(*) FILTER (WHERE obsidian_exported_at IS NOT NULL) AS exported FROM browser_visits').fetchone()
-    with connect() as db:
         captures = db.execute('SELECT state,count(*) AS count FROM page_captures GROUP BY state').fetchall()
-    return {"page_captures": {row['state']: row['count'] for row in captures}, "pages_folder": "Forgetful Me/raw", "wiki_home": "Forgetful Me/Home.md", "history_export": progress, "history_folder": "Forgetful Me/Browsing History", "mounted": vault.is_dir(), "name": "Forgetful Me", "markdown_files": sum(1 for p in vault.rglob("*.md") if ".obsidian" not in p.parts), "desktop_url": "/vault"}
+    return {"page_captures": {row['state']: row['count'] for row in captures}, "pages_folder": "Forgetful Me/Captured pages", "wiki_home": "Forgetful Me/Home.md", "history_export": progress, "history_folder": "Forgetful Me/Browsing History", "mounted": vault.is_dir(), "name": "Forgetful Me", "markdown_files": markdown_files(vault) if vault.is_dir() else 0, "desktop_url": "/vault"}
 
 
 @app.get("/health/ready")
@@ -151,3 +159,6 @@ app.include_router(wiki_router)
 
 from app.ai_routes import router as ai_router
 app.include_router(ai_router)
+
+from app.vault_import import router as vault_import_router
+app.include_router(vault_import_router)

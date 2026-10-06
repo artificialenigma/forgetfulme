@@ -16,6 +16,12 @@ def main():
     while True:
         try:
             heartbeat()
+            with connect() as db:
+                enabled=db.execute("SELECT automation_enabled FROM vault_controls WHERE id=1").fetchone()["automation_enabled"]
+            if not enabled:
+                test_pending()
+                time.sleep(5)
+                continue
             refresh_sources()
             if time.monotonic() - indexed_at > 60:
                 rebuild_indexes()

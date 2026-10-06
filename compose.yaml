@@ -69,7 +69,7 @@ services:
   web:
     <<: *app
     volumes:
-      - obsidian_vault:/vault:ro
+      - obsidian_vault:/vault
     depends_on:
       migrate: {condition: service_completed_successfully}
       vault-init: {condition: service_completed_successfully}

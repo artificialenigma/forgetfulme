@@ -124,7 +124,7 @@ def ingest(batch: Batch, request: Request):
         for visit in batch.visits:
             inserted += db.execute('INSERT INTO browser_visits(device_id,event_id,url,title,visited_at) VALUES (%s,%s,%s,%s,%s) ON CONFLICT(device_id,event_id) DO NOTHING', (device['id'], visit.event_id, visit.url, visit.title, visit.visited_at)).rowcount
             page_url = visit.url.split('#',1)[0]
-            db.execute('INSERT INTO page_captures(url_hash,url) VALUES (%s,%s) ON CONFLICT DO NOTHING', (hashlib.sha256(page_url.encode()).hexdigest(),page_url))
+            db.execute("INSERT INTO page_captures(url_hash,url) VALUES (%s,%s) ON CONFLICT(url_hash) DO UPDATE SET state='pending',attempts=0,error=NULL,next_attempt_at=now() WHERE page_captures.error='Vault cleared; waiting for a new browsing import'", (hashlib.sha256(page_url.encode()).hexdigest(),page_url))
         db.execute('UPDATE browser_devices SET last_seen=now() WHERE id=%s', (device['id'],))
     return {'accepted': len(batch.visits), 'inserted': inserted}
 
@@ -203,7 +203,7 @@ def save_import(source, visits):
             for visit in visits:
                 copy.write_row((visit.event_id, visit.url, visit.title, visit.visited_at))
         inserted = db.execute('INSERT INTO browser_visits(device_id,event_id,url,title,visited_at) SELECT %s,event_id,url,title,visited_at FROM import_visits ON CONFLICT(device_id,event_id) DO NOTHING', (device_id,)).rowcount
-        db.execute("INSERT INTO page_captures(url_hash,url) SELECT DISTINCT encode(sha256(convert_to(split_part(url,'#',1),'UTF8')),'hex'),split_part(url,'#',1) FROM import_visits ON CONFLICT DO NOTHING")
+        db.execute("INSERT INTO page_captures(url_hash,url) SELECT DISTINCT encode(sha256(convert_to(split_part(url,'#',1),'UTF8')),'hex'),split_part(url,'#',1) FROM import_visits ON CONFLICT(url_hash) DO UPDATE SET state='pending',attempts=0,error=NULL,next_attempt_at=now() WHERE page_captures.error='Vault cleared; waiting for a new browsing import'")
         db.execute('UPDATE browser_devices SET last_seen=now() WHERE id=%s', (device_id,))
     return inserted
 
@@ -213,7 +213,7 @@ def capture_status(request: Request):
     with connect() as db:
         counts = db.execute('SELECT state,count(*) AS count FROM page_captures GROUP BY state ORDER BY state').fetchall()
         recent = db.execute("SELECT url,state,error,note_path,extractor FROM page_captures WHERE state IN ('failed','blocked','retry','complete') ORDER BY (state='complete'),coalesce(fetched_at,next_attempt_at) DESC LIMIT 30").fetchall()
-    body = '<h1>Page scraping</h1><p>The worker fetches each unique imported or collected URL, extracts readable public HTML/text into Markdown, and saves successful captures in the vault. The wiki worker organizes captures under <strong>Forgetful Me/raw</strong> and linked records under <strong>Forgetful Me/wiki</strong>. Visit indexes remain in Browsing History. Crawl4AI is used for HTML extraction when configured, with local extraction as a fallback.</p><p>'
+    body = '<h1>Page scraping</h1><p>The worker fetches each unique imported or collected URL, extracts readable public HTML/text into Markdown, and saves successful captures in the vault. The wiki worker organizes captures under <strong>Forgetful Me/Captured pages</strong> and linked records under <strong>Forgetful Me/wiki</strong>. Visit indexes remain in Browsing History. Crawl4AI is used for HTML extraction when configured, with local extraction as a fallback.</p><p>'
     body += ' · '.join(html.escape(row['state']) + ': ' + f"{row['count']:,}" for row in counts) + '</p>'
     body += '<p>Refresh this page for progress. Local/private pages, robots restrictions, unavailable pages and unreadable content are reported as blocked. Temporary failures retry up to three times. Login-only or JavaScript-only content and PDFs need a separate capture path; browser cookies are never sent. Captures reflect the page now, not necessarily what you saw when visiting.</p>'
     body += f'<div class="capture-actions"><form method="post" action="/history/capture/retry"><input type="hidden" name="csrf" value="{csrf(request)}"><button>Retry failed pages</button></form><a class="button" href="/history/capture">Refresh status</a><a class="button" href="/vault">Open Obsidian vault</a></div><h2>Recent captures and issues</h2><p class="muted">Up to 30 results · issues first, then completed captures.</p><table class="capture-table"><caption class="sr-only">Page capture results and failure reasons</caption><thead><tr><th scope="col">Page</th><th scope="col">Status</th><th scope="col">Capture result</th></tr></thead><tbody>'
