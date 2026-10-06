@@ -159,3 +159,17 @@ For a later server deployment, `compose.crawl4ai.yaml` provides an alternative d
 ### Shared interface
 
 All app pages now use the same sidebar, branding and stylesheet, including import results/errors and the Obsidian vault wrapper. Login shares the form/branding styles. Obsidian itself remains an embedded desktop with its own appearance. Device and history timestamps use Maldives time. Run `python3 scripts/ui_shell_test.py` against the local Docker stack to check shared navigation and rendering.
+
+## Local knowledge wiki (Ollama)
+
+The Obsidian layer follows the source/wiki separation, source attribution and reviewed-note protection described by [obsidian-llm-wiki](https://github.com/gd4ai/obsidian-llm-wiki). This is a native Forgetful Me implementation; installing that plugin is not required.
+
+Open **Forgetful Me/Home** inside the shared Obsidian desktop. Captured Markdown is copied to `Forgetful Me/raw/<prefix>/<source-id>.md`; linked source records, website indexes, concepts, entities and saved answers live under `Forgetful Me/wiki`. Existing `Pages` captures and browsing history are preserved. Generated notes have `managed_by: forgetfulme`; setting `reviewed: true` in their YAML frontmatter prevents automatic replacement. Files without the ownership marker are also preserved. Put annotations in wiki notes, keeping raw captures as evidence.
+
+A separate `wiki-worker` indexes successful page captures and uses local Ollama for draft synthesis. Defaults are `OLLAMA_URL=http://host.docker.internal:11434` and `OLLAMA_MODEL=qwen2.5:3b`. Install Ollama on the Docker host and run `ollama pull qwen2.5:3b` before starting the stack. The [default model](https://ollama.com/library/qwen2.5:3b) is approximately 1.9 GB. Keep Ollama private; change these environment variables and recreate the wiki worker when moving to a server. Ollama/model files remain on the host and need separate backup from the app’s database/vault backups.
+
+AI processing uses the first 18,000 characters of each capture. Concept/entity names and supporting quotations must occur in that excerpt; summaries remain unverified AI drafts. Failed/invalid model output retries up to three times with a five-minute delay. The page scraper runs independently, so model downtime does not stop capture. Pages requiring login, blocked by robots or without readable content still cannot produce wiki sources.
+
+The authenticated **Knowledge wiki** page (`/vault/wiki`) shows progress and queues questions. Lexical retrieval matches question words against compiled source summaries; answers use up to three retrieved source excerpts (5,000 characters each), cite allowed source IDs and are saved to `wiki/queries`. Ask short, focused questions and refresh for results. No matching compiled sources produces an explicit failure. This bounded retrieval does not implement the reference plugin’s graph-ranking algorithms, whole-vault reasoning or wiki linting. Source text is sent only to your configured Ollama endpoint; the model receives no browser credentials or tools.
+
+Validation: `docker compose exec -T wiki-worker python - < scripts/wiki_test.py`; `python3 scripts/ui_shell_test.py` tests signed-in page rendering against the running stack.

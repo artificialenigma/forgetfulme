@@ -3,7 +3,7 @@ import html
 
 NAVIGATION = [('/', 'Overview', '◫'), ('/history', 'Browsing history', '≡'),
               ('/devices', 'Browser devices', '◉'), ('/history/import', 'Import history', '⇧'),
-              ('/history/capture', 'Page scraping', '↗'), ('/vault', 'Obsidian vault', '◇')]
+              ('/history/capture', 'Page scraping', '↗'), ('/vault', 'Obsidian vault', '◇'), ('/vault/wiki', 'Knowledge wiki', '◎')]
 
 
 def brand():

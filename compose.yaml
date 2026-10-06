@@ -98,6 +98,27 @@ services:
       migrate: {condition: service_completed_successfully}
       vault-init: {condition: service_completed_successfully}
 
+  wiki-worker:
+    <<: *app
+    command: [python, -m, app.wiki_worker]
+    networks: [backend, scraper_egress]
+    extra_hosts: ['host.docker.internal:host-gateway']
+    environment:
+      <<: *app-environment
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+    volumes:
+      - obsidian_vault:/vault
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      vault-init: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -m, app.health, wiki-worker]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
   scheduler:
     <<: *app
     command: [python, -m, app.jobs, scheduler]

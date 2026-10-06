@@ -163,3 +163,14 @@ Use one dashboard-based app shell and stylesheet for every authenticated page, i
 ## Capture table presentation — 2026-10-05
 
 Present capture results in fixed page/status/result columns with semantic headers, hostname links, bounded URL previews, colored statuses and readable saved-note/error descriptions. Show full URL/path via hover text, keep mobile columns readable through horizontal scrolling, and retain shared layout/styles.
+
+## 2026-10-06 — Obsidian linked knowledge layer
+
+Approved provider: **local Ollama**. Adapt the source/wiki separation, native wiki links, source attribution and reviewed-note protection from gd4ai/obsidian-llm-wiki. Implement it in Forgetful Me’s backend and shared Docker vault.
+
+- Preserve existing captures and history. Organize copied raw captures, linked source records, paginated source/website/history indexes, concepts and entities; expose a Home note and shared app navigation.
+- Run local synthesis in a separate `wiki-worker`, using configurable host Ollama and Qwen 2.5 3B initially. Capture processing remains independent. Bound synthesis to 18,000 characters and validate concept/entity evidence quotations; label output as drafts.
+- Preserve generated notes with `reviewed: true` and all files without the app ownership marker.
+- Provide authenticated, CSRF-protected queued Q&A with bounded lexical retrieval over compiled summaries and answers grounded in up to three source excerpts. Save cited answers to the vault.
+- Keep the database/vault backed up by the current stack. When moving to a server, install/reach Ollama there, configure its private URL/model, and back up model files separately.
+- Advanced graph retrieval, global consistency checks and full-vault reasoning remain future work.

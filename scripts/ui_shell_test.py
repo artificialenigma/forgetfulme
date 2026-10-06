@@ -14,7 +14,7 @@ with client.open(base+'/login',timeout=10) as response:
     csrf=re.search(r'name="csrf" value="([a-f0-9]+)"',login)[1]
 data=urllib.parse.urlencode({'username':env['ADMIN_USER'],'password':env['ADMIN_PASSWORD'],'csrf':csrf}).encode()
 client.open(base+'/login',data=data,timeout=10).close()
-paths=['/','/history','/devices','/history/import','/history/capture','/vault']
+paths=['/','/history','/devices','/history/import','/history/capture','/vault','/vault/wiki']
 for path in paths:
     with client.open(base+path,timeout=10) as response: body=response.read().decode()
     assert '/static/dashboard.css' in body and '<style>' not in body
@@ -36,3 +36,18 @@ with client.open(request,timeout=10) as response: error=response.read().decode()
 assert 'No visits were saved' in error and '<aside class="sidebar">' in error
 assert 'href="/history/import" class="active" aria-current="page"' in error
 print('Shared stylesheet, sidebar, active navigation, vault frame, login and import error rendering passed')
+# Knowledge routes must retain the app's authentication and CSRF boundaries.
+with urllib.request.urlopen(base+'/vault/wiki',timeout=10) as response:
+    assert '/login?next=/vault/wiki' in response.url
+try:
+    request=urllib.request.Request(base+'/vault/wiki/questions',data=urllib.parse.urlencode({'question':'Docker','csrf':'invalid'}).encode())
+    client.open(request,timeout=10)
+    raise AssertionError('Wiki question accepted an invalid CSRF token')
+except urllib.error.HTTPError as error:
+    assert error.code==403
+try:
+    urllib.request.urlopen(base+'/vault/wiki/questions',data=b'question=Docker',timeout=10)
+    raise AssertionError('Wiki question accepted an unauthenticated request')
+except urllib.error.HTTPError as error:
+    assert error.code==401
+print('Knowledge page login redirect and question authentication/CSRF checks passed')

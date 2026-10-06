@@ -213,7 +213,7 @@ def capture_status(request: Request):
     with connect() as db:
         counts = db.execute('SELECT state,count(*) AS count FROM page_captures GROUP BY state ORDER BY state').fetchall()
         recent = db.execute("SELECT url,state,error,note_path,extractor FROM page_captures WHERE state IN ('failed','blocked','retry','complete') ORDER BY (state='complete'),coalesce(fetched_at,next_attempt_at) DESC LIMIT 30").fetchall()
-    body = '<h1>Page scraping</h1><p>The worker fetches each unique imported or collected URL, extracts readable public HTML/text into Markdown, and saves successful captures in <strong>Forgetful Me/Pages</strong> in the vault. Visit indexes remain in Browsing History. Crawl4AI is used for HTML extraction when configured, with local extraction as a fallback.</p><p>'
+    body = '<h1>Page scraping</h1><p>The worker fetches each unique imported or collected URL, extracts readable public HTML/text into Markdown, and saves successful captures in the vault. The wiki worker organizes captures under <strong>Forgetful Me/raw</strong> and linked records under <strong>Forgetful Me/wiki</strong>. Visit indexes remain in Browsing History. Crawl4AI is used for HTML extraction when configured, with local extraction as a fallback.</p><p>'
     body += ' · '.join(html.escape(row['state']) + ': ' + f"{row['count']:,}" for row in counts) + '</p>'
     body += '<p>Refresh this page for progress. Local/private pages, robots restrictions, unavailable pages and unreadable content are reported as blocked. Temporary failures retry up to three times. Login-only or JavaScript-only content and PDFs need a separate capture path; browser cookies are never sent. Captures reflect the page now, not necessarily what you saw when visiting.</p>'
     body += f'<div class="capture-actions"><form method="post" action="/history/capture/retry"><input type="hidden" name="csrf" value="{csrf(request)}"><button>Retry failed pages</button></form><a class="button" href="/history/capture">Refresh status</a><a class="button" href="/vault">Open Obsidian vault</a></div><h2>Recent captures and issues</h2><p class="muted">Up to 30 results · issues first, then completed captures.</p><table class="capture-table"><caption class="sr-only">Page capture results and failure reasons</caption><thead><tr><th scope="col">Page</th><th scope="col">Status</th><th scope="col">Capture result</th></tr></thead><tbody>'
@@ -224,7 +224,7 @@ def capture_status(request: Request):
         tone = {'complete':'good','blocked':'neutral','retry':'warn','failed':'bad'}[row['state']]
         label = {'complete':'Captured','blocked':'Blocked','retry':'Retry queued','failed':'Failed'}[row['state']]
         if row['state'] == 'complete':
-            detail = '<strong>Saved to Obsidian</strong><small>' + html.escape(row['extractor'] or 'Markdown extraction') + ' · Forgetful Me/Pages</small>'
+            detail = '<strong>Saved to Obsidian</strong><small>' + html.escape(row['extractor'] or 'Markdown extraction') + ' · Vault capture</small>'
             full = html.escape(row['note_path'] or '',quote=True)
         else:
             detail = '<span>' + html.escape(row['error'] or 'Waiting for another attempt') + '</span>'

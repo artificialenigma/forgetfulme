@@ -31,6 +31,17 @@ CREATE TABLE IF NOT EXISTS page_captures (
  note_path text, final_url text, fetched_at timestamptz, error text
 );
 ALTER TABLE page_captures ADD COLUMN IF NOT EXISTS extractor text;
+ALTER TABLE page_captures ADD COLUMN IF NOT EXISTS wiki_source_path text;
+ALTER TABLE page_captures ADD COLUMN IF NOT EXISTS wiki_indexed_at timestamptz;
+ALTER TABLE page_captures ADD COLUMN IF NOT EXISTS wiki_data jsonb;
+ALTER TABLE page_captures ADD COLUMN IF NOT EXISTS ai_state text NOT NULL DEFAULT 'pending' CHECK(ai_state IN ('pending','retry','complete','failed','reviewed'));
+ALTER TABLE page_captures ADD COLUMN IF NOT EXISTS ai_attempts integer NOT NULL DEFAULT 0;
+ALTER TABLE page_captures ADD COLUMN IF NOT EXISTS ai_next_attempt timestamptz NOT NULL DEFAULT now();
+ALTER TABLE page_captures ADD COLUMN IF NOT EXISTS ai_error text;
+CREATE TABLE IF NOT EXISTS wiki_questions (
+ id uuid PRIMARY KEY, question text NOT NULL, state text NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','complete','failed')),
+ answer text, citations jsonb, created_at timestamptz NOT NULL DEFAULT now(), completed_at timestamptz, error text
+);
 CREATE INDEX IF NOT EXISTS page_captures_pending ON page_captures(next_attempt_at) WHERE state IN ('pending','retry');
 INSERT INTO page_captures(url_hash,url)
  SELECT DISTINCT encode(sha256(convert_to(split_part(url,'#',1),'UTF8')),'hex'),split_part(url,'#',1) FROM browser_visits
