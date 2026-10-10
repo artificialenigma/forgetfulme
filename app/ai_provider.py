@@ -16,7 +16,12 @@ def settings(include_key=False):
     with connect() as db:
         fields = ',pgp_sym_decrypt(api_key,%s) AS key' if include_key else ',(api_key IS NOT NULL) AS has_key'
         row = db.execute('SELECT provider,base_url,model,enabled,temperature,max_tokens,context_size,test_state,test_message,models,models_state,models_message,models_fetched_at'+fields+' FROM ai_settings WHERE id=1', (secret_key(),) if include_key else ()).fetchone()
-    return row or dict(provider='ollama',base_url=os.environ.get('OLLAMA_URL','http://host.docker.internal:11434'),model=os.environ.get('OLLAMA_MODEL','qwen2.5:3b'),enabled=True,temperature=0.0,max_tokens=1400,context_size=8192,has_key=False,key=None,test_state='untested',test_message=None)
+    from app.ingestion_policy import enabled
+    effective=enabled('ai')
+    if row:
+        row['enabled']=bool(row['enabled'] and effective)
+        return row
+    return dict(provider='ollama',base_url=os.environ.get('OLLAMA_URL','http://host.docker.internal:11434'),model=os.environ.get('OLLAMA_MODEL','qwen2.5:3b'),enabled=effective,temperature=0.0,max_tokens=1400,context_size=8192,has_key=False,key=None,test_state='untested',test_message=None)
 
 
 def validate(values):

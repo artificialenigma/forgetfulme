@@ -1,0 +1,16 @@
+{
+  "image": "sha256:a45fd08f8f15f67026c1bff0a151f0479244caf6751a0c6943b3870efafcd025",
+  "versions": {
+    "crawl4ai": "0.8.6",
+    "PyJWT": "2.10.1",
+    "requests": "2.32.5",
+    "urllib3": "2.6.3",
+    "chardet": "7.3.0"
+  },
+  "internal_network": true,
+  "published_ports": false,
+  "production_mounts": false,
+  "provider_calls": false,
+  "real_app_extraction_before_after_restart": "passed",
+  "jwt_api_authentication": "not exercised"
+}

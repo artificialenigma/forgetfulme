@@ -1,5 +1,7 @@
 """Knowledge note ownership, evidence and citation boundaries."""
 import json
+from app.db import require_isolated_test
+require_isolated_test()
 import tempfile
 from pathlib import Path
 from app.wiki import atomic_note, note_header, link, facet_path, validate_answer, retrieval_terms, Synthesis
@@ -7,7 +9,9 @@ from app.wiki import atomic_note, note_header, link, facet_path, validate_answer
 with tempfile.TemporaryDirectory() as temporary:
     path = Path(temporary)/'note.md'
     assert atomic_note(path,note_header('source','Test')+'first')
-    assert atomic_note(path,note_header('source','Test')+'second')
+    assert not atomic_note(path,note_header('source','Test')+'second')
+    assert 'first' in path.read_text() and 'second' not in path.read_text()
+    assert any('second' in candidate.read_text() for candidate in path.parent.glob('*pending*'))
     path.write_text(note_header('source','Test',reviewed=True)+'human review')
     assert not atomic_note(path,note_header('source','Test')+'overwrite')
     assert 'human review' in path.read_text()

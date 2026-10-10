@@ -1,0 +1,351 @@
+{
+  "candidate": "forgetfulme-test:8100b994ac8c",
+  "metrics": [
+    {
+      "corpus": "synthetic-v1",
+      "questions": 25,
+      "notes": 29,
+      "recall_at_5": 1.0,
+      "invalid_citations": 0,
+      "scope_violations": 0,
+      "exclusion_violations": 0,
+      "search_selection_ms": {
+        "p50": 8.924374997150153,
+        "p95": 57.57838300487491
+      },
+      "results": [
+        {
+          "id": "shoreline",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/shoreline.md",
+            "corpus/late.md",
+            "corpus/budget.md",
+            "corpus/tiles.md",
+            "corpus/tourism.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "budget",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/budget.md",
+            "corpus/water.md",
+            "corpus/shoreline.md",
+            "corpus/collision.md",
+            "corpus/intercom.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "water",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/water.md",
+            "corpus/budget.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "tourism",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/tourism.md",
+            "corpus/budget.md",
+            "corpus/shoreline.md",
+            "corpus/water.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "vblank",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/vblank.md",
+            "corpus/banks.md",
+            "corpus/collision.md",
+            "corpus/tiles.md",
+            "Forgetful Me/personal/fixture.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "sprite",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/vblank.md",
+            "corpus/collision.md",
+            "corpus/tiles.md",
+            "corpus/banks.md",
+            "corpus/intercom.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "banks",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/banks.md",
+            "corpus/collision.md",
+            "corpus/tiles.md",
+            "corpus/vblank.md",
+            "corpus/tourism.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "collision",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/collision.md",
+            "corpus/tiles.md",
+            "corpus/banks.md",
+            "corpus/vblank.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "tiles",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/tiles.md",
+            "corpus/collision.md",
+            "corpus/banks.md",
+            "corpus/vblank.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "sleep",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/sleep.md",
+            "corpus/crowding.md",
+            "corpus/wake_evidence.md",
+            "corpus/adc.md",
+            "corpus/backoff.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "intercom",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/intercom.md",
+            "corpus/crowding.md",
+            "corpus/adc.md",
+            "corpus/backoff.md",
+            "corpus/riscv.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "jitter",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/intercom.md",
+            "corpus/crowding.md",
+            "corpus/adc.md",
+            "corpus/backoff.md",
+            "corpus/riscv.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "riscv",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/riscv.md",
+            "corpus/crowding.md",
+            "corpus/adc.md",
+            "corpus/backoff.md",
+            "corpus/intercom.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "backoff",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/backoff.md",
+            "corpus/crowding.md",
+            "corpus/adc.md",
+            "corpus/intercom.md",
+            "corpus/riscv.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "adc",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/adc.md",
+            "corpus/crowding.md",
+            "corpus/backoff.md",
+            "corpus/intercom.md",
+            "corpus/riscv.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "draft",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/draft.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "late",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/late.md",
+            "corpus/late.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "crowding",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/sleep.md",
+            "corpus/wake_evidence.md",
+            "corpus/crowding.md",
+            "corpus/backoff.md",
+            "corpus/riscv.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "cafe",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/cafe.md",
+            "corpus/decomposed.md",
+            "corpus/dhivehi.md",
+            "corpus/draft.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "decomposed",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/decomposed.md",
+            "corpus/cafe.md",
+            "corpus/vblank.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "dhivehi",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/dhivehi.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "alias",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/alias.md",
+            "corpus/cafe.md",
+            "corpus/decomposed.md",
+            "corpus/dhivehi.md",
+            "corpus/intercom.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "duplicates",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/duplicate_raw.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "independent",
+          "recall_at_5": 1,
+          "paths": [
+            "corpus/independent_one.md",
+            "corpus/alias.md"
+          ],
+          "expected_quote_found": true
+        },
+        {
+          "id": "personal",
+          "recall_at_5": 1,
+          "paths": [
+            "Forgetful Me/personal/fixture.md"
+          ],
+          "expected_quote_found": true
+        }
+      ],
+      "unanswerable": [
+        {
+          "id": "zero_matches",
+          "related_hits": 0,
+          "expected_answerability": false,
+          "requires_model_abstention": false
+        },
+        {
+          "id": "missing_measurement",
+          "related_hits": 5,
+          "expected_answerability": false,
+          "requires_model_abstention": true
+        },
+        {
+          "id": "missing_forecast",
+          "related_hits": 4,
+          "expected_answerability": false,
+          "requires_model_abstention": true
+        }
+      ],
+      "abstention_limit": "Related-hit questions require provider abstention; this benchmark makes no model requests and does not claim model abstention accuracy.",
+      "environment": {
+        "machine": "aarch64",
+        "python": "3.13.16",
+        "container_cpu_count": 10
+      }
+    }
+  ],
+  "performance": [
+    {
+      "notes": 1000,
+      "queries": 50,
+      "warmup_queries": 3,
+      "recall_at_5": 0.96,
+      "p50_ms": 64.36679199396167,
+      "p95_ms": 210.78973314506584,
+      "min_ms": 15.004333006800152,
+      "max_ms": 215.44470799562987,
+      "seed": "deterministic-v1",
+      "measurement": "SQL library.search plus evidence selection; excludes filesystem scan and provider inference",
+      "environment": {
+        "machine": "aarch64",
+        "python": "3.13.16",
+        "container_cpu_count": 10
+      }
+    },
+    {
+      "notes": 10000,
+      "queries": 50,
+      "warmup_queries": 3,
+      "recall_at_5": 0.96,
+      "p50_ms": 483.1285210020724,
+      "p95_ms": 1922.705483847676,
+      "min_ms": 73.66758299758658,
+      "max_ms": 2179.502083992702,
+      "seed": "deterministic-v1",
+      "measurement": "SQL library.search plus evidence selection; excludes filesystem scan and provider inference",
+      "environment": {
+        "machine": "aarch64",
+        "python": "3.13.16",
+        "container_cpu_count": 10
+      }
+    }
+  ]
+}

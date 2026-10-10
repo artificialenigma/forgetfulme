@@ -1,0 +1,10 @@
+{
+  "image": "sha256:73358403e0524062774cbb48891d91060913a07c213fa3fcb285eb87e83e9182",
+  "isolated_internal_network": true,
+  "new_empty_state_volume": true,
+  "published_ports": false,
+  "app_and_novnc_http": true,
+  "restart_http": true,
+  "production_state_compatibility": "not tested",
+  "old_image_rollback": "unavailable"
+}

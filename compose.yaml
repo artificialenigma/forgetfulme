@@ -22,7 +22,8 @@ x-app: &app
 
 services:
   proxy:
-    image: caddy:2-alpine
+    image: forgetfulme-proxy:local
+    build: ./infra/proxy
     restart: unless-stopped
     ports:
       - '${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:80'
@@ -41,7 +42,8 @@ services:
       options: {max-size: 10m, max-file: '3'}
 
   db:
-    image: postgres:17-alpine
+    image: forgetfulme-db:local
+    build: ./infra/database
     restart: unless-stopped
     environment:
       POSTGRES_DB: forgetfulme
@@ -121,6 +123,21 @@ services:
       retries: 3
       start_period: 30s
 
+  library-worker:
+    <<: *app
+    command: [python, -m, app.library_worker]
+    volumes:
+      - obsidian_vault:/vault
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      vault-init: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -m, app.health, library-worker]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
   scheduler:
     <<: *app
     command: [python, -m, app.jobs, scheduler]
@@ -145,7 +162,7 @@ services:
       - obsidian_config:/obsidian-config
 
   obsidian:
-    image: linuxserver/obsidian:latest
+    image: linuxserver/obsidian:latest@sha256:0ae1b2ffe772a0b4b2107f24e3462d22fa6067706d5b2f8a7cde964f855db863
     restart: unless-stopped
     environment:
       PUID: '10001'
@@ -174,7 +191,8 @@ services:
       options: {max-size: 10m, max-file: '3'}
 
   backup:
-    image: postgres:17-alpine
+    image: forgetfulme-db:local
+    build: ./infra/database
     restart: unless-stopped
     entrypoint: [/bin/sh, /scripts/backup.sh]
     environment:

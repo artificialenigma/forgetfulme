@@ -1,12 +1,15 @@
 """Verify shared frame and navigation across signed-in HTTP pages."""
 import http.cookiejar
+import os
 import re
 import urllib.parse
 import urllib.request
-from pathlib import Path
+from app.db import require_isolated_test
 
-env=dict(line.split('=',1) for line in Path('.env').read_text().splitlines() if line and not line.startswith('#'))
-base='http://localhost:'+env.get('HTTP_PORT','8080')
+require_isolated_test()
+env=os.environ
+base=env['FM_TEST_BASE_URL']
+assert base=='http://test-web:8000', 'Refusing a non-isolated HTTP target'
 client=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 with client.open(base+'/login',timeout=10) as response:
     login=response.read().decode()
@@ -14,7 +17,7 @@ with client.open(base+'/login',timeout=10) as response:
     csrf=re.search(r'name="csrf" value="([a-f0-9]+)"',login)[1]
 data=urllib.parse.urlencode({'username':env['ADMIN_USER'],'password':env['ADMIN_PASSWORD'],'csrf':csrf}).encode()
 client.open(base+'/login',data=data,timeout=10).close()
-paths=['/','/history','/devices','/history/import','/history/capture','/vault','/vault/wiki','/settings/ai','/vault/import']
+paths=['/','/library','/library/health','/library/questions','/history','/devices','/history/import','/history/capture','/vault','/vault/wiki','/settings/ai','/vault/import']
 for path in paths:
     with client.open(base+path,timeout=10) as response: body=response.read().decode()
     assert '/static/dashboard.css' in body and '<style>' not in body

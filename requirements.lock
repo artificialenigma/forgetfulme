@@ -31,3 +31,7 @@ typing_extensions==4.16.0
 tzlocal==5.4.4
 urllib3==2.8.0
 uvicorn==0.54.0
+PyYAML==6.0.3
+pypdf==6.19.0
+markdown-it-py==4.2.0
+mdurl==0.1.2

@@ -37,7 +37,7 @@ def extract_html(content, source_url):
     safe_html = html.tostring(document,encoding='unicode')
     payload = {'urls':['raw:'+safe_html],
                'browser_config':{'type':'BrowserConfig','params':{'headless':True,'java_script_enabled':False,'ignore_https_errors':False,'verbose':False}},
-               'crawler_config':{'type':'CrawlerRunConfig','params':{'word_count_threshold':1,'verbose':False,'base_url':source_url,'excluded_tags':['nav','footer','header','aside','form'],'remove_forms':True}}}
+               'crawler_config':{'type':'CrawlerRunConfig','params':{'word_count_threshold':1,'verbose':False,'excluded_tags':['nav','footer','header','aside','form'],'remove_forms':True}}}
     headers = {'Content-Type':'application/json'}
     token = os.environ.get('CRAWL4AI_API_TOKEN')
     if token: headers['Authorization']='Bearer '+token

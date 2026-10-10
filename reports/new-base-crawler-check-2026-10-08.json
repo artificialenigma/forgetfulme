@@ -1,0 +1,13 @@
+{
+  "image": "sha256:3e099e0a5b4ab2eb7c8e20d64be06d34ab626f4f36a2ec450f01e1d4bb1b7745",
+  "app_image": "forgetfulme-test:762a461c255a",
+  "modern_server": true,
+  "jwt_api_authentication": "passed",
+  "patched_dependency_and_jwt_checks": true,
+  "real_app_extraction_before_after_restart": "passed",
+  "untrusted_config_and_private_destination_rejection": "passed",
+  "internal_network": true,
+  "provider_calls": false,
+  "production_mounts": false,
+  "published_ports": false
+}

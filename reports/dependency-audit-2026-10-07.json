@@ -1,0 +1,190 @@
+{
+  "dependencies": [
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "vulns": []
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "vulns": []
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "vulns": []
+    },
+    {
+      "name": "babel",
+      "version": "2.18.0",
+      "vulns": []
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "vulns": []
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.2",
+      "vulns": []
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "vulns": []
+    },
+    {
+      "name": "courlan",
+      "version": "1.4.0",
+      "vulns": []
+    },
+    {
+      "name": "dateparser",
+      "version": "1.4.3",
+      "vulns": []
+    },
+    {
+      "name": "fastapi",
+      "version": "0.142.2",
+      "vulns": []
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "vulns": []
+    },
+    {
+      "name": "htmldate",
+      "version": "1.11.0",
+      "vulns": []
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "vulns": []
+    },
+    {
+      "name": "justext",
+      "version": "3.0.2",
+      "vulns": []
+    },
+    {
+      "name": "lxml",
+      "version": "6.1.3",
+      "vulns": []
+    },
+    {
+      "name": "lxml-html-clean",
+      "version": "0.4.5",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.0",
+      "vulns": []
+    },
+    {
+      "name": "psycopg-binary",
+      "version": "3.3.6",
+      "vulns": []
+    },
+    {
+      "name": "psycopg",
+      "version": "3.3.6",
+      "vulns": []
+    },
+    {
+      "name": "pydantic",
+      "version": "2.13.5",
+      "vulns": []
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.46.5",
+      "vulns": []
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "vulns": []
+    },
+    {
+      "name": "pytz",
+      "version": "2026.5",
+      "vulns": []
+    },
+    {
+      "name": "regex",
+      "version": "2026.9.29",
+      "vulns": []
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "vulns": []
+    },
+    {
+      "name": "starlette",
+      "version": "1.7.0",
+      "vulns": []
+    },
+    {
+      "name": "tld",
+      "version": "0.13.2",
+      "vulns": []
+    },
+    {
+      "name": "trafilatura",
+      "version": "2.3.0",
+      "vulns": []
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "vulns": []
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "vulns": []
+    },
+    {
+      "name": "tzlocal",
+      "version": "5.4.4",
+      "vulns": []
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "vulns": []
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.54.0",
+      "vulns": []
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "vulns": []
+    },
+    {
+      "name": "pypdf",
+      "version": "6.19.0",
+      "vulns": []
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "vulns": []
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "vulns": []
+    }
+  ],
+  "fixes": []
+}

@@ -42,4 +42,6 @@ def render(state):
         service_rows=''.join(service_rows), job_rows=''.join(recent_rows),
     )
 
+    knowledge=state.get('library',{})
+    body='<section class="panel content-panel"><h2>Your knowledge</h2><p>'+str(knowledge.get('searchable',0))+' searchable files · '+str(knowledge.get('imported',0))+' imported notes · '+str(knowledge.get('generated',0))+' generated navigation/history files · '+str(knowledge.get('reviewed',0))+' reviewed · '+str(knowledge.get('questions',0))+' research questions · '+str(knowledge.get('issues',0))+' health findings</p><p><a href="/library">Search library</a> · <a href="/library/questions">Research questions</a> · <a href="/library/health">Review vault health</a></p></section>'+body
     return render_page(body, "Overview", "/", show_heading=False)

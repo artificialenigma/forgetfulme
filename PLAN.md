@@ -1,8 +1,16 @@
 # Forgetful Me — project plan
 
-Last updated: 2026-10-04 (Indian/Maldives, UTC+05:00).
+Last updated: 2026-10-07 (Indian/Maldives, UTC+05:00).
 
 This is the source of truth for confirmed project decisions. Conversation history and completed work are recorded in `WORKLOG.md`. Proposed details remain pending until agreed.
+
+## Current state and next upgrades — 2026-10-07
+
+The app now implements browser-history ingestion/import/export, public-page capture, the stack-owned Obsidian vault, local-vault ZIP import, configurable AI providers/model discovery, and a unified local knowledge library with section search, provenance, review/project/exclusion preferences, connections, research questions and vault diagnostics. The dated sections below preserve earlier decisions and proposals; statements such as “not implemented” in those historical sections describe their earlier milestone, not current functionality.
+
+The user subsequently authorized implementation and a resumable checklist. [UPGRADE_CHECKLIST.md](UPGRADE_CHECKLIST.md) records the live execution checkpoint; [UPGRADE_PLAN.md](UPGRADE_PLAN.md) defines the full backlog; [AI_AGENT_HANDOFF.md](AI_AGENT_HANDOFF.md) provides continuation context. The first delivery addresses evidence boundaries, identity/citation/indexing foundations and metadata fidelity. Check the checklist/worklog for actual passed checks and deployment state; the full backlog is not yet complete.
+
+Recommended order: evidence lineage/exclusions; stable document identities, revision citations and protected publication; resilient indexing/source jobs; metadata and multilingual extraction; PDF text/page citations; explicit ingestion controls; measured retrieval; project/research UI; reproducible dependency updates and recovery throughout. The first delivery is FM-01. Current code and outstanding uncommitted changes are the implementation baseline. Runtime settings and Docker health must be rechecked before future changes; the last recorded deployment state is history, not a fresh assertion.
 
 ## Confirmed purpose
 
@@ -188,3 +196,57 @@ Provide an authenticated, CSRF-protected ZIP import for notes/folders/attachment
 ## 2026-10-06 — Model discovery from provider base URL
 
 Add Save and fetch models to AI settings. Persist connection details and pause AI during discovery, queue a bounded GET catalog request in the wiki worker, and offer the returned IDs in a selector alongside manual model entry. Use Ollama /api/tags or compatible /models, authenticate with the encrypted key, refuse redirects, limit response/list sizes and invalidate catalogs when endpoint/credentials change. Discovery must work while vault processing is paused and must not download models or transmit notes.
+
+
+## 2026-10-06 — Proposed upgrade backlog and agent handoff
+
+Created a dependency-ordered, testable upgrade plan after the seven vault improvements. Local code inspection identifies concrete follow-up gaps in derived-answer scope filtering, path-based identities, citation revision retention, stale summaries after recapture, publication conflicts/starvation, and index failure handling. The plan defines acceptance criteria, update/recovery checks and a first implementation task. No new app behavior, dependency updates or Docker deployment were executed by this planning request. See UPGRADE_PLAN.md and AI_AGENT_HANDOFF.md for the proposed work; WORKLOG.md records the planning evidence and limitations.
+
+
+## 2026-10-06 — First upgrade delivery checkpoint
+
+Implemented and deployed FM-01 evidence boundaries and FM-04 extraction fidelity,
+with stable IDs/citation snapshots/rename journals, resilient scan/publication
+jobs, recapture revision handling and disposable release validation foundations.
+The full 12-script isolated suite passed; all four live app services match the
+tested image, all 1,200 original visible source files and settings were preserved.
+FM-02/03/07/09 remain partial; FM-05/06/08 remain pending. Resume from
+UPGRADE_CHECKLIST.md at FM-02 strict versioned publication/conflict recovery;
+WORKLOG.md records validation and exact image/source identity.
+
+## 2026-10-07 — Second upgrade delivery checkpoint
+
+The second delivery is tested and deployed (18 disposable scripts, five healthy exact-source app services). FM-01/04/05/06 are complete; FM-02/03/07/08/09 remain partial. Immutable publication, separate local indexing, selected PDF page extraction, ingestion policies, measured retrieval and project/reading workflow are delivered. DB/vault restore and Python advisory audit passed. Publication action/recovery acceptance now passes. Resume UPGRADE_CHECKLIST.md's rename impact/recovery tasks; broader failure UI, populated visual QA and full-stack recovery remain.
+
+2026-10-07 follow-up: publication POST/reconciliation fixtures passed; reviewed proposals cannot activate, symlink proposals return conflict. Exact-image Docker rollout and fresh baseline are recorded in UPGRADE_CHECKLIST.md. Next: rename repair impact/collision previews and remaining recovery coverage.
+
+2026-10-07 filename follow-up: inbound relationship/collision preview and content-bound approval are deployed. Broader rename recovery/retention coverage and detailed failure workflows remain; see checklist for exact candidate.
+
+2026-10-07 recovery follow-up: bounded no-follow rename reconciliation and paginated job/error/rename retry controls deployed. Large-corpus index interruption/restart and final retention/acceptance audit remain; use the latest checklist checkpoint.
+
+2026-10-07 acceptance checkpoint: FM-01–06 complete; FM-07/08/09 partial. Nineteen isolated scripts pass including actual 1k scan SIGKILL/restart and concurrent publication review. Content/config offline restore passed; matched runtime/credential recovery remains. Next action is in UPGRADE_CHECKLIST.md.
+
+2026-10-07 matched recovery/display delivery: one scheduled four-archive set passed forward migration/original row preservation, restored FastAPI runtime and synthetic encryption compatibility. Generated navigation/history display labels/filter/counts now preserve evidence permissions. Remaining: populated visual/accessibility QA, AI answer evaluation while paused, OS/companion audit and actual desktop-runtime rollback.
+
+
+2026-10-07 latest checkpoint: FM-01–06 and FM-08 complete; FM-07/09 remain partial. Ten populated responsive UI screens passed scoped checks. Unused pip removed from runtime; 19 tests passed and exact candidate b1258a3cddfe deployed/verified. Companion scans have high/critical findings; archive desktop image is absent locally and its OS audit is unavailable. Resume UPGRADE_CHECKLIST.md and reports/container-audit-review-2026-10-07.md before companion recreation. AI remains paused; model answer/abstention evaluation and actual desktop rollback remain outstanding.
+
+
+2026-10-07 companion follow-up: patched Caddy proxy deployed after isolated real-config/auth/routing checks; no high findings in its final scan (three other entries remain). Backup service healthy after restart and fresh scheduled backup. Exact pinned PostgreSQL restore verified latest saved DB/vault; PostgreSQL tag unchanged. Archive candidate passed empty-state startup/restart only and remains undeployed with high/critical findings. Resume remaining database/desktop/crawler advisory and saved-state rollback work in UPGRADE_CHECKLIST.md; evidence in reports/companion-update-2026-10-07.md.
+
+
+2026-10-07 database/desktop follow-up: tested PostgreSQL17.11 zlib correction deployed to database/backup (exact image 5fab158ded33); source/settings verification passed. Matched same-image Obsidian HTTP/process startup/restart and original source preservation passed on copied volumes. Obsidian candidate downloads timed out; current desktop and optional Crawl4AI digests pinned. Remaining: crawler/desktop/archive patches, cross-version/interactive rollback and paused model evaluation. Resume reports/database-desktop-checkpoint-2026-10-07.md and UPGRADE_CHECKLIST.md.
+
+
+2026-10-07 crawler delivery: available Debian updates, PyJWT/urllib3 fixes and Requests-compatible chardet deployed after real extraction/restart and JWT-enabled API tests. Upstream overlapping jwt/PyJWT namespace repaired with a maintained auth adapter. Exact image e12f6af5ffe9; original launch configuration preserved and old crawler retained stopped for rollback. Notes/settings verification passed; scanner rules 995→771, critical 35→25. Next: Crawl4AI 0.9.0/anyio/nltk candidate tests, desktop cross-version recovery and archive compatibility. Read reports/crawler-delivery-2026-10-07.md and UPGRADE_CHECKLIST.md.
+
+
+## Latest checkpoint — 2026-10-07 23:35 Maldives
+
+Matching Crawl4AI 0.9.4 server/library and compatible app client are deployed. Twenty isolated scripts and the actual API/auth/config/restart matrix passed; all five app services are healthy. Original 1,201 sources and ingestion settings are preserved; AI remains paused. Direct crawler API access now requires a bearer token; the app receives its private token from ignored `.env`. Final crawler scan still contains 25 critical rules (768 total), requiring further artifact/runtime triage. FM-07/09 remain partial. Resume `UPGRADE_CHECKLIST.md` and `reports/modern-crawler-delivery-2026-10-07.md` for minimal-base/advisory work, desktop cross-version recovery and archive image/state compatibility. Earlier dated entries are historical.
+
+
+Latest continuation (2026-10-07 23:48 Maldives): read-only crawler triage recorded 22 critical rules in historical metadata and three in installed OS components; no exploitability clearance. Experimental Python 3.12 supervisor candidate e208621bb2ac passed the full extraction/restart/auth matrix and removes Python 3.11. It is not deployed. Automatic approval review blocked external Docker Scout metadata transmission; next prerequisite is explicit scan approval, then bundled Node/fork review and maintained-build integration. See reports/crawler-runtime-triage-2026-10-07.md and WORKLOG.md. Production and AI pause remain unchanged.
+
+
+Latest continuation (2026-10-08 10:15 Maldives): official 0.9.4 image extraction/restart passed but no-expiration JWT acceptance failed. Maintained crawler build now uses the pinned new official base plus existing auth/dependency fixes and Supervisor 4.3.0 on Python 3.12.14; duplicate Python 3.11 removed. Exact candidate 3e099e0a5b4a passed the full modern API/extraction/restart matrix, but remains undeployed awaiting explicit Docker Scout metadata transmission approval and fresh scan. Remaining FFmpeg/TIFF, browser Node/fork advisory review and desktop/archive recovery stay open. Production and AI pause are unchanged. Resume reports/new-base-crawler-continuation-2026-10-08.md.

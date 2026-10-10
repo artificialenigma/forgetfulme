@@ -120,11 +120,14 @@ def ingest(batch: Batch, request: Request):
         device = db.execute('SELECT id FROM browser_devices WHERE token_hash=%s AND NOT revoked FOR UPDATE', (digest,)).fetchone()
         if not device:
             raise HTTPException(401, 'Invalid or revoked device token')
+        from app.ingestion_policy import enabled
+        if not enabled('visits',db):
+            raise HTTPException(409, 'Visit storage is paused in ingestion controls')
         inserted = 0
         for visit in batch.visits:
             inserted += db.execute('INSERT INTO browser_visits(device_id,event_id,url,title,visited_at) VALUES (%s,%s,%s,%s,%s) ON CONFLICT(device_id,event_id) DO NOTHING', (device['id'], visit.event_id, visit.url, visit.title, visit.visited_at)).rowcount
             page_url = visit.url.split('#',1)[0]
-            db.execute("INSERT INTO page_captures(url_hash,url) VALUES (%s,%s) ON CONFLICT(url_hash) DO UPDATE SET state='pending',attempts=0,error=NULL,next_attempt_at=now() WHERE page_captures.error='Vault cleared; waiting for a new browsing import'", (hashlib.sha256(page_url.encode()).hexdigest(),page_url))
+            db.execute("INSERT INTO page_captures(url_hash,url) VALUES (%s,%s) ON CONFLICT(url_hash) DO UPDATE SET state='pending',attempts=0,error=NULL,next_attempt_at=now() WHERE page_captures.error='Vault cleared; waiting for a new browsing import' AND NOT page_captures.excluded AND NOT page_captures.cancelled", (hashlib.sha256(page_url.encode()).hexdigest(),page_url))
         db.execute('UPDATE browser_devices SET last_seen=now() WHERE id=%s', (device['id'],))
     return {'accepted': len(batch.visits), 'inserted': inserted}
 
@@ -156,6 +159,9 @@ async def import_history(request: Request):
     from email import policy
     from email.parser import BytesParser
     from app.history_import import MAX_BYTES, parse_export
+    from app.ingestion_policy import enabled
+    if not enabled('visits'):
+        raise HTTPException(409, 'Visit storage is paused in ingestion controls')
 
     content_type = request.headers.get('content-type', '')
     if not content_type.startswith('multipart/form-data') or '\r' in content_type or '\n' in content_type or len(content_type) > 512:
@@ -196,6 +202,9 @@ async def import_history(request: Request):
 def save_import(source, visits):
     device_id = uuid.uuid5(uuid.NAMESPACE_URL, 'forgetfulme:import:' + source.casefold())
     with connect() as db:
+        from app.ingestion_policy import enabled
+        if not enabled('visits',db):
+            raise HTTPException(409, 'Visit storage is paused in ingestion controls')
         db.execute('INSERT INTO browser_devices(id,name,token_hash,revoked) VALUES (%s,%s,%s,true) ON CONFLICT(id) DO NOTHING', (device_id, 'Import: ' + source, hashlib.sha256(secrets.token_bytes(32)).hexdigest()))
         # Stage validated entries with COPY, then deduplicate in one atomic transaction.
         db.execute('CREATE TEMP TABLE import_visits (event_id text, url text, title text, visited_at timestamptz) ON COMMIT DROP')
@@ -203,7 +212,7 @@ def save_import(source, visits):
             for visit in visits:
                 copy.write_row((visit.event_id, visit.url, visit.title, visit.visited_at))
         inserted = db.execute('INSERT INTO browser_visits(device_id,event_id,url,title,visited_at) SELECT %s,event_id,url,title,visited_at FROM import_visits ON CONFLICT(device_id,event_id) DO NOTHING', (device_id,)).rowcount
-        db.execute("INSERT INTO page_captures(url_hash,url) SELECT DISTINCT encode(sha256(convert_to(split_part(url,'#',1),'UTF8')),'hex'),split_part(url,'#',1) FROM import_visits ON CONFLICT(url_hash) DO UPDATE SET state='pending',attempts=0,error=NULL,next_attempt_at=now() WHERE page_captures.error='Vault cleared; waiting for a new browsing import'")
+        db.execute("INSERT INTO page_captures(url_hash,url) SELECT DISTINCT encode(sha256(convert_to(split_part(url,'#',1),'UTF8')),'hex'),split_part(url,'#',1) FROM import_visits ON CONFLICT(url_hash) DO UPDATE SET state='pending',attempts=0,error=NULL,next_attempt_at=now() WHERE page_captures.error='Vault cleared; waiting for a new browsing import' AND NOT page_captures.excluded AND NOT page_captures.cancelled")
         db.execute('UPDATE browser_devices SET last_seen=now() WHERE id=%s', (device_id,))
     return inserted
 
@@ -212,14 +221,15 @@ def save_import(source, visits):
 def capture_status(request: Request):
     with connect() as db:
         counts = db.execute('SELECT state,count(*) AS count FROM page_captures GROUP BY state ORDER BY state').fetchall()
-        recent = db.execute("SELECT url,state,error,note_path,extractor FROM page_captures WHERE state IN ('failed','blocked','retry','complete') ORDER BY (state='complete'),coalesce(fetched_at,next_attempt_at) DESC LIMIT 30").fetchall()
+        recent = db.execute("SELECT url_hash,url,state,error,note_path,extractor,excluded FROM page_captures WHERE state IN ('failed','blocked','retry','complete') ORDER BY (state='complete'),coalesce(fetched_at,next_attempt_at) DESC LIMIT 30").fetchall()
     body = '<h1>Page scraping</h1><p>The worker fetches each unique imported or collected URL, extracts readable public HTML/text into Markdown, and saves successful captures in the vault. The wiki worker organizes captures under <strong>Forgetful Me/Captured pages</strong> and linked records under <strong>Forgetful Me/wiki</strong>. Visit indexes remain in Browsing History. Crawl4AI is used for HTML extraction when configured, with local extraction as a fallback.</p><p>'
     body += ' · '.join(html.escape(row['state']) + ': ' + f"{row['count']:,}" for row in counts) + '</p>'
     body += '<p>Refresh this page for progress. Local/private pages, robots restrictions, unavailable pages and unreadable content are reported as blocked. Temporary failures retry up to three times. Login-only or JavaScript-only content and PDFs need a separate capture path; browser cookies are never sent. Captures reflect the page now, not necessarily what you saw when visiting.</p>'
     body += f'<div class="capture-actions"><form method="post" action="/history/capture/retry"><input type="hidden" name="csrf" value="{csrf(request)}"><button>Retry failed pages</button></form><a class="button" href="/history/capture">Refresh status</a><a class="button" href="/vault">Open Obsidian vault</a></div><h2>Recent captures and issues</h2><p class="muted">Up to 30 results · issues first, then completed captures.</p><table class="capture-table"><caption class="sr-only">Page capture results and failure reasons</caption><thead><tr><th scope="col">Page</th><th scope="col">Status</th><th scope="col">Capture result</th></tr></thead><tbody>'
     from app.dashboard import badge
+    from app.ingestion_policy import safe_display_url
     for row in recent:
-        url = html.escape(row['url'], quote=True)
+        url = html.escape(safe_display_url(row['url']), quote=True)
         host = html.escape(urlsplit(row['url']).hostname or 'Website')
         tone = {'complete':'good','blocked':'neutral','retry':'warn','failed':'bad'}[row['state']]
         label = {'complete':'Captured','blocked':'Blocked','retry':'Retry queued','failed':'Failed'}[row['state']]
@@ -229,6 +239,8 @@ def capture_status(request: Request):
         else:
             detail = '<span>' + html.escape(row['error'] or 'Waiting for another attempt') + '</span>'
             full = html.escape(row['error'] or '',quote=True)
+        controls=f'<form method="post" action="/history/capture/action"><input type="hidden" name="csrf" value="{csrf(request)}"><input type="hidden" name="id" value="{row["url_hash"]}"><button name="action" value="retry">Retry this page</button><button name="action" value="{"include" if row["excluded"] else "exclude"}">{"Include" if row["excluded"] else "Exclude"}</button></form>'
+        detail+=controls
         body += f'<tr><td><a class="capture-title" href="{url}" title="{url}" target="_blank" rel="noopener noreferrer">{host}</a><span class="capture-url" title="{url}">{url}</span></td><td class="capture-state">{badge(label,tone)}</td><td class="capture-result" title="{full}">{detail}</td></tr>'
     if not recent:
         body += '<tr><td colspan="3" class="empty">No capture results yet. Queued pages will appear here after the worker processes them.</td></tr>'
@@ -240,5 +252,23 @@ def capture_status(request: Request):
 async def retry_captures(request: Request):
     await form(request)
     with connect() as db:
-        db.execute("UPDATE page_captures SET state='pending',attempts=0,error=NULL,next_attempt_at=now() WHERE state='failed'")
+        db.execute("UPDATE page_captures SET state='pending',selected=true,attempts=0,error=NULL,next_attempt_at=now(),policy_state='queued',policy_reason=NULL WHERE state='failed' AND NOT excluded AND NOT cancelled")
     return RedirectResponse('/history/capture',status_code=303)
+
+
+@router.post('/history/capture/action',dependencies=[Depends(admin)])
+async def capture_action(request: Request):
+    data=await form(request);identity=data.get('id',[''])[0];action=data.get('action',[''])[0]
+    if not re.fullmatch(r'[a-f0-9]{64}',identity) or action not in ('retry','include','exclude'):raise HTTPException(400,'Invalid capture action')
+    with connect() as db:
+        row=db.execute('SELECT note_path,wiki_source_path FROM page_captures WHERE url_hash=%s FOR UPDATE',(identity,)).fetchone()
+        if not row:raise HTTPException(404,'Capture not found')
+        if action=='retry':
+            db.execute("UPDATE page_captures SET state='pending',selected=true,cancelled=false,attempts=0,error=NULL,next_attempt_at=now(),wiki_indexed_at=NULL,policy_state='queued',policy_reason=NULL WHERE url_hash=%s AND NOT excluded",(identity,))
+        else:
+            excluded=action=='exclude'
+            db.execute('UPDATE page_captures SET excluded=%s WHERE url_hash=%s',(excluded,identity))
+            derivative_paths=[r['path'] for r in db.execute('SELECT path FROM library_documents WHERE source_id=%s',(identity,)).fetchall()]
+            for path in set([row['note_path'],row['wiki_source_path'],*derivative_paths]):
+                if path:db.execute('INSERT INTO library_overrides(path,excluded) VALUES (%s,%s) ON CONFLICT(path) DO UPDATE SET excluded=excluded.excluded',(path,excluded))
+    return RedirectResponse('/history/capture',303)

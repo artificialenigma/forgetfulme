@@ -2,8 +2,11 @@
 # CRAWL4AI_URL=http://crawl4ai-service:11235 docker compose -f compose.yaml -f compose.crawl4ai.yaml --profile crawl4ai up -d --build --wait
 services:
   crawl4ai-service:
-    image: unclecode/crawl4ai:0.8.6
+    image: forgetfulme-crawler:local
+    build: ./infra/crawler
     profiles: [crawl4ai]
+    environment:
+      CRAWL4AI_API_TOKEN: ${CRAWL4AI_API_TOKEN:?Run the tested crawler migration first}
     restart: unless-stopped
     shm_size: 1gb
     networks: [crawl4ai]

@@ -1,0 +1,8 @@
+{
+  "image": "sha256:d13915e628d36145ba0df6728cfc6388f06e9981d91e0e36f6aab2b04aeba85e",
+  "real_caddyfile": true,
+  "internal_network": true,
+  "production_mounts": false,
+  "provider_calls": false,
+  "routing_and_auth_headers": "passed"
+}

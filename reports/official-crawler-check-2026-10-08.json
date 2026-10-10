@@ -1,0 +1,16 @@
+{
+  "image": "sha256:9021b3cb5c6f12570bbcd5395638495e0a06969b3148e377b953d174af2ebc9b",
+  "app_image": "forgetfulme-test:762a461c255a",
+  "state": "failed_acceptance",
+  "real_app_extraction_before_after_restart": "passed",
+  "failure": {
+    "case": "missing_expiration",
+    "expected_http": 401,
+    "actual_http": 200
+  },
+  "full_security_matrix": "not completed after first failure",
+  "deployed": false,
+  "provider_calls": false,
+  "production_mounts": false,
+  "published_ports": false
+}

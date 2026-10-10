@@ -1,9 +1,9 @@
 """Shared app navigation, branding and page frame."""
 import html
 
-NAVIGATION = [('/', 'Overview', '◫'), ('/history', 'Browsing history', '≡'),
+NAVIGATION = [('/', 'Overview', '◫'), ('/library', 'Library', '▤'), ('/library/projects', 'Projects', '◫'), ('/library/health', 'Vault health', '✓'), ('/library/questions', 'Research questions', '?'), ('/history', 'Browsing history', '≡'),
               ('/devices', 'Browser devices', '◉'), ('/history/import', 'Import history', '⇧'),
-              ('/history/capture', 'Page scraping', '↗'), ('/vault', 'Obsidian vault', '◇'), ('/vault/wiki', 'Knowledge wiki', '◎'), ('/vault/import', 'Import vault', '⇧'), ('/settings/ai', 'AI settings', '⚙')]
+              ('/history/capture', 'Page scraping', '↗'), ('/vault', 'Obsidian vault', '◇'), ('/vault/wiki', 'Knowledge wiki', '◎'), ('/vault/import', 'Import vault', '⇧'), ('/library/pdf', 'PDF extraction', '▤'), ('/settings/ingestion', 'Ingestion controls', '⇩'), ('/settings/ai', 'AI settings', '⚙')]
 
 
 def brand():

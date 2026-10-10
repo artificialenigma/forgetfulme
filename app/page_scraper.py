@@ -2,11 +2,13 @@
 import hashlib
 import http.client
 import ipaddress
+import json
 import os
 import re
 import socket
 import ssl
 import time
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote, urljoin, urlsplit, urlunsplit
@@ -17,6 +19,7 @@ from app.obsidian_export import text
 
 USER_AGENT = 'ForgetfulMe/0.1'
 MAX_BODY = 5 * 1024 * 1024
+_FETCH_POLICY_GUARD = ContextVar('capture_fetch_policy', default=None)
 
 
 class Blocked(ValueError):
@@ -58,6 +61,9 @@ class PinnedConnection(http.client.HTTPConnection):
 def fetch(url, respect_robots=False):
     deadline = time.monotonic() + 20
     for _ in range(6):
+        guard = _FETCH_POLICY_GUARD.get()
+        if guard:
+            guard(url)
         parts, host, port, address = public_target(url)
         if respect_robots: check_robots(url)
         remaining = deadline-time.monotonic()
@@ -128,7 +134,23 @@ def check_robots(url):
         raise Blocked('Site robots policy disallows fetching this page')
 
 
+def capture_content(note):
+    """Stable extracted content, excluding generated fetch time and note links."""
+    from app.library import frontmatter
+    _,body,_=frontmatter(note)
+    body=re.split(r'\r?\n---\r?\n',body,maxsplit=1)[-1]
+    body=re.sub(r'\r?\n\r?\n## Wiki record\r?\n\r?\n\[\[Forgetful Me/wiki/sources/[^\n]+\]\]\s*\Z','',body)
+    return body.replace('\r\n','\n').strip()
+
+
+def capture_hash(note):
+    return hashlib.sha256(capture_content(note).encode('utf-8')).hexdigest()
+
+
 def scrape_page(url, digest, vault=Path('/vault')):
+    from app.library import capture_problem, capture_url_problem
+    problem=capture_url_problem(url)
+    if problem:raise Blocked(problem)
     public_target(url)
     status, content_type, body, final = fetch(url, respect_robots=True)
     if status in {401,403,404,410}:
@@ -158,30 +180,77 @@ def scrape_page(url, digest, vault=Path('/vault')):
         title = (metadata.title if metadata else None) or urlsplit(final).hostname
     if not content or len(content.strip()) < 40:
         raise Blocked('No readable page content found (may require JavaScript or login)')
-    folder = vault / 'Forgetful Me' / 'Pages'
-    folder.mkdir(parents=True,exist_ok=True)
-    destination = folder / (digest + '.md')
-    source_link = quote(final,safe=':/?#@!$&\'*=+;,%~-._')
-    note = f'# {text(title)}\n\nSource: [{text(final)}](<{source_link}>)\n\nFetched: {datetime.now(timezone.utc).isoformat()}\nExtractor: {engine}\n\n> Captured from the public page at fetch time. Keep personal annotations in a separate note.\n\n---\n\n{content}\n'
-    temporary = destination.with_suffix('.md.tmp')
-    with temporary.open('w',encoding='utf-8') as output:
-        output.write(note); output.flush(); os.fsync(output.fileno())
-    os.replace(temporary,destination)
+    problem=capture_problem(final,title,content)
+    if problem:raise Blocked(problem)
+    from app.library import safe_path
+    from app.wiki import atomic_note,note_header
+    relative='Forgetful Me/Pages/'+digest+'.md'
+    destination=safe_path(relative,vault)
+    from app.ingestion_policy import safe_display_url
+    display_url=safe_display_url(final)
+    source_link = quote(display_url,safe=':/?#@!$&\'*=+;,%~-._')
+    content_digest=hashlib.sha256(content.replace('\r\n','\n').strip().encode()).hexdigest()
+    note = note_header('raw_source',title,source_id=digest,source_url=display_url,source_revision=content_digest)
+    note += f'# {text(title)}\n\nSource: [{text(display_url)}](<{source_link}>)\n\nFetched: {datetime.now(timezone.utc).isoformat()}\nExtractor: {engine}\n\n> Captured from the public page at fetch time. Keep personal annotations in a separate note.\n\n---\n\n{content}\n'
+    if destination.exists():
+        # Capture snapshots are immutable. Legacy or annotated originals survive
+        # recapture; changed extraction gets a separate, no-overwrite revision.
+        if capture_hash(destination.read_text())==content_digest:
+            return str(destination.relative_to(vault)),final,engine
+        destination=safe_path('Forgetful Me/Pages/'+digest+' — '+content_digest[:16]+'.md',vault)
+        if destination.exists() and capture_hash(destination.read_text())==content_digest:
+            return str(destination.relative_to(vault)),final,engine
+    if not atomic_note(destination,note,expected_hash=''):
+        raise FetchFailed('Captured revision destination is protected or changed')
     return str(destination.relative_to(vault)), final, engine
 
 
 def process_page():
     with connect() as db:
+        from app.ingestion_policy import claim_capture, finish_capture, check_fetch_policy
         # Row lock lasts through bounded fetching; another worker skips it safely.
-        job = db.execute("SELECT url_hash,url,attempts FROM page_captures WHERE state IN ('pending','retry') AND next_attempt_at<=now() ORDER BY next_attempt_at,url_hash FOR UPDATE SKIP LOCKED LIMIT 1").fetchone()
+        job = claim_capture(db)
         if not job: return False
         attempts = job['attempts'] + 1
         try:
-            path, final, engine = scrape_page(job['url'],job['url_hash'])
-            db.execute("UPDATE page_captures SET state='complete',attempts=%s,note_path=%s,final_url=%s,extractor=%s,fetched_at=now(),error=NULL WHERE url_hash=%s",(attempts,path,final,engine,job['url_hash']))
+            old_hash=job.get('capture_content_hash','')
+            if not old_hash and job.get('note_path'):
+                from app.library import safe_path
+                try:old_hash=capture_hash(safe_path(job['note_path']).read_text())
+                except (OSError,ValueError,UnicodeError):pass
+            def guard(url):
+                try:check_fetch_policy(db,job,url)
+                except ValueError as error:raise Blocked(str(error))
+            token = _FETCH_POLICY_GUARD.set(guard)
+            try:path, final, engine = scrape_page(job['url'],job['url_hash'])
+            finally:_FETCH_POLICY_GUARD.reset(token)
+            from app.library import safe_path
+            captured=safe_path(path).read_text()
+            new_hash=capture_hash(captured)
+            changed=old_hash!=new_hash
+            already_published=not changed and job.get('wiki_indexed_at') is not None and job.get('publication_state')=='succeeded'
+            if already_published:path=job['note_path']
+            data=job.get('wiki_data') or {}
+            if changed:
+                from app.library import frontmatter
+                new_title=frontmatter(captured)[0].get('title')
+                data={'title':new_title or data.get('title') or urlsplit(final).hostname}
+            summary_hash=(job.get('summary_source_hash') or old_hash) if not changed else ''
+            db.execute("""UPDATE page_captures SET state='complete',attempts=%s,note_path=%s,final_url=%s,extractor=%s,fetched_at=now(),error=NULL,
+                capture_content_hash=%s,summary_source_hash=%s,wiki_data=%s::jsonb,
+                ai_state=CASE WHEN %s THEN 'pending' ELSE ai_state END,
+                ai_attempts=CASE WHEN %s THEN 0 ELSE ai_attempts END,
+                ai_error=CASE WHEN %s THEN NULL ELSE ai_error END,ai_next_attempt=now(),
+                publication_state=CASE WHEN %s THEN publication_state ELSE 'pending' END,
+                publication_error=CASE WHEN %s THEN publication_error ELSE NULL END,publication_next_attempt=now(),
+                wiki_indexed_at=CASE WHEN %s THEN now() ELSE NULL END
+                WHERE url_hash=%s""",(attempts,path,final,engine,new_hash,summary_hash,json.dumps(data),changed,changed,changed,already_published,already_published,already_published,job['url_hash']))
+            finish_capture(db,job,'complete')
         except Blocked as error:
             db.execute("UPDATE page_captures SET state='blocked',attempts=%s,error=%s WHERE url_hash=%s",(attempts,str(error)[:200],job['url_hash']))
+            finish_capture(db,job,'blocked')
         except Exception as error:
             reason = str(error)[:200] if isinstance(error,FetchFailed) else 'Page extraction or vault write failed'
             db.execute("UPDATE page_captures SET state=%s,attempts=%s,error=%s,next_attempt_at=now()+(%s * interval '1 second') WHERE url_hash=%s",('retry' if attempts < 3 else 'failed',attempts,reason,60*2**(attempts-1),job['url_hash']))
+            finish_capture(db,job,'retry' if attempts<3 else 'failed')
     return True

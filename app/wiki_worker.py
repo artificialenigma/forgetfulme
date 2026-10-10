@@ -16,11 +16,17 @@ def main():
     while True:
         try:
             heartbeat()
-            with connect() as db:
-                enabled=db.execute("SELECT automation_enabled FROM vault_controls WHERE id=1").fetchone()["automation_enabled"]
+            from app.publication import recover_publications
+            recover_publications()
+            from app.publication import apply_publications
+            apply_publications()
+            from app.connection_export import process_one as export_connection
+            export_connection()
+            from app.ingestion_policy import enabled as stage_enabled
+            enabled=stage_enabled('history_exports')
             if not enabled:
-                if not discover_pending():
-                    test_pending()
+                if not discover_pending() and not test_pending() and settings()['enabled']:
+                    answer_one()
                 time.sleep(5)
                 continue
             refresh_sources()

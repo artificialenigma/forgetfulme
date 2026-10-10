@@ -144,7 +144,7 @@ The worker now exports existing and newly collected/imported history to `Forgetf
 
 The worker now queues every distinct imported/collected URL (fragments removed) and captures readable public HTML or plain text into `Forgetful Me/Pages/<URL hash>.md`. Existing history is queued at migration. Source URL and fetch timestamp appear in each note. The earlier Browsing History files remain visit indexes; page content is stored separately. Open **Page scraping status** from Browsing history to see counts, blocked/failed reasons and retry failed pages.
 
-The worker attempts one page per ten-second cycle, follows up to five redirects, checks robots rules, pins connections to validated public IPs with TLS hostname verification, limits fetched pages to 5 MiB and does not use browser cookies. Local/private addresses and nonstandard ports are excluded. Temporary failures retry up to three attempts. Login-only, JavaScript-only, robots-blocked, unavailable or non-HTML/text pages are reported rather than marked captured. PDFs are not sent to MinerU yet. Notes capture the current server-visible page; they cannot reconstruct its contents at the historical visit time. Images and browser session data are not captured. Managed page notes can be rebuilt on retries; keep annotations separately. The content request necessarily sends the URL, including its query, to the target website. The worker has an explicit egress network; other backend services remain on the internal network.
+The worker attempts one page per ten-second cycle, follows up to five redirects, checks robots rules, pins connections to validated public IPs with TLS hostname verification, limits fetched pages to 5 MiB and does not use browser cookies. Local/private addresses and nonstandard ports are excluded. Temporary failures retry up to three attempts. Login-only, JavaScript-only, robots-blocked, unavailable or non-HTML/text pages are reported rather than marked captured. PDFs are not sent to MinerU yet. Notes capture the current server-visible page; they cannot reconstruct its contents at the historical visit time. Images and browser session data are not captured. Changed recaptures create a new immutable capture file; unchanged extracted content reuses its existing revision. Keep annotations separately. The content request necessarily sends the URL, including its query, to the target website. The worker has an explicit egress network; other backend services remain on the internal network.
 
 Extraction uses pinned [Trafilatura](https://trafilatura.readthedocs.io/en/latest/extraction-overview.html) with Markdown output, formatting and readable-content filtering. Verify isolated extraction/network-boundary behavior with `docker compose exec -T worker python - < scripts/page_scraper_test.py`.
 
@@ -158,21 +158,21 @@ For a later server deployment, `compose.crawl4ai.yaml` provides an alternative d
 
 ### Shared interface
 
-All app pages now use the same sidebar, branding and stylesheet, including import results/errors and the Obsidian vault wrapper. Login shares the form/branding styles. Obsidian itself remains an embedded desktop with its own appearance. Device and history timestamps use Maldives time. Run `python3 scripts/ui_shell_test.py` against the local Docker stack to check shared navigation and rendering.
+All app pages now use the same sidebar, branding and stylesheet, including import results/errors and the Obsidian vault wrapper. Login shares the form/branding styles. Obsidian itself remains an embedded desktop with its own appearance. Device and history timestamps use Maldives time. Run `python3 scripts/run_isolated_tests.py` to check shared navigation and rendering in a disposable stack.
 
 ## Local knowledge wiki (Ollama)
 
 The Obsidian layer follows the source/wiki separation, source attribution and reviewed-note protection described by [obsidian-llm-wiki](https://github.com/gd4ai/obsidian-llm-wiki). This is a native Forgetful Me implementation; installing that plugin is not required.
 
-Open **Forgetful Me/Home** inside the shared Obsidian desktop. Captured Markdown is copied to `Forgetful Me/raw/<prefix>/<source-id>.md`; linked source records, website indexes, concepts, entities and saved answers live under `Forgetful Me/wiki`. Existing `Pages` captures and browsing history are preserved. Generated notes have `managed_by: forgetfulme`; setting `reviewed: true` in their YAML frontmatter prevents automatic replacement. Files without the ownership marker are also preserved. Put annotations in wiki notes, keeping raw captures as evidence.
+Open **Forgetful Me/Home** inside the shared Obsidian desktop. Captured Markdown is published under `Forgetful Me/Captured pages/<readable title and source ID>.md`; source records, simple website/library/history indexes and saved answers live under `Forgetful Me/wiki`. Automatic concept/entity expansion is disabled. Existing `Pages` captures and browsing history are preserved. Generated notes have `managed_by: forgetfulme`; setting `reviewed: true` in their YAML frontmatter prevents automatic replacement. Files without the ownership marker are also preserved. Put annotations in wiki notes, keeping raw captures as evidence.
 
-A separate `wiki-worker` indexes successful page captures and uses local Ollama for draft synthesis. Defaults are `OLLAMA_URL=http://host.docker.internal:11434` and `OLLAMA_MODEL=qwen2.5:3b`. Install Ollama on the Docker host and run `ollama pull qwen2.5:3b` before starting the stack. The [default model](https://ollama.com/library/qwen2.5:3b) is approximately 1.9 GB. Keep Ollama private; change these environment variables and recreate the wiki worker when moving to a server. Ollama/model files remain on the host and need separate backup from the app’s database/vault backups.
+A separate `library-worker` scans local notes and processes selected PDFs. `wiki-worker` publishes generated revisions and uses the configured AI provider for draft synthesis. Defaults are `OLLAMA_URL=http://host.docker.internal:11434` and `OLLAMA_MODEL=qwen2.5:3b`. Install Ollama on the Docker host and run `ollama pull qwen2.5:3b` before starting the stack. The [default model](https://ollama.com/library/qwen2.5:3b) is approximately 1.9 GB. Keep Ollama private; change these environment variables and recreate the wiki worker when moving to a server. Ollama/model files remain on the host and need separate backup from the app’s database/vault backups.
 
-AI processing uses the first 18,000 characters of each capture. Concept/entity names and supporting quotations must occur in that excerpt; summaries remain unverified AI drafts. Failed/invalid model output retries up to three times with a five-minute delay. The page scraper runs independently, so model downtime does not stop capture. Pages requiring login, blocked by robots or without readable content still cannot produce wiki sources.
+AI summaries use up to 18,000 characters sampled from sections throughout each capture. Any extracted names and supporting quotations must occur in those excerpts; summaries remain unverified AI drafts. Failed/invalid model output retries up to three times with a five-minute delay. The page scraper runs independently, so model downtime does not stop capture. Pages requiring login, blocked by robots or without readable content still cannot produce wiki sources.
 
-The authenticated **Knowledge wiki** page (`/vault/wiki`) shows progress and queues questions. Lexical retrieval matches question words against compiled source summaries; answers use up to three retrieved source excerpts (5,000 characters each), cite allowed source IDs and are saved to `wiki/queries`. Ask short, focused questions and refresh for results. No matching compiled sources produces an explicit failure. This bounded retrieval does not implement the reference plugin’s graph-ranking algorithms, whole-vault reasoning or wiki linting. Source text is sent only to your configured Ollama endpoint; the model receives no browser credentials or tools.
+The authenticated **Knowledge wiki** page (`/vault/wiki`) shows progress and queues questions. Local lexical retrieval matches note sections and title/aliases; answers use up to six sections, at most two per underlying source, retain exact cited excerpts/revisions, and are saved to `wiki/queries`. An explicit archive or all-notes scope governs each question. Ask short, focused questions and refresh for results. No matching compiled sources produces an explicit failure. This bounded retrieval does not implement the reference plugin’s graph-ranking algorithms, whole-vault reasoning or wiki linting. Source text is sent only to your configured AI endpoint; the model receives no browser credentials or tools.
 
-Validation: `docker compose exec -T wiki-worker python - < scripts/wiki_test.py`; `python3 scripts/ui_shell_test.py` tests signed-in page rendering against the running stack.
+Validation: `python3 scripts/run_isolated_tests.py` runs wiki and authenticated page fixtures in an isolated stack with AI paused and fixture providers.
 
 ### Configure AI inside Forgetful Me
 
@@ -205,3 +205,108 @@ Automatic downloading, history exports and wiki generation are **paused persiste
 In **AI settings**, enter the provider type, base URL and optional API key, then select **Save and fetch models**. Refresh after a few seconds and choose from **Available models**, then save your selection. Fetching works while vault automation is paused and keeps AI paused until you choose a model and enable processing. It lists models without downloading any model or sending notes/questions. Manual model names remain available for providers without catalog support.
 
 Ollama discovery uses [`GET /api/tags`](https://docs.ollama.com/api/tags); OpenAI-compatible discovery uses [`GET /models`](https://developers.openai.com/api/reference/resources/models/methods/list) under your API prefix. Results are cached in the database and cleared when the endpoint or credentials change. A listed model may still lack JSON/chat support; use the connection test after selecting it. Native non-compatible APIs need a compatible gateway.
+
+## Unified local knowledge library
+
+Open **Library** (`/library`) to search imported Obsidian notes and generated captures without AI. The library worker maintains an incremental local PostgreSQL section index. Local indexing has an independent ingestion control; when unset it inherits automation. AI pause does not pause permitted local indexing. **Scan for changed notes** queues an incremental scan; **Rebuild every local note** reparses unchanged files too. Hidden directories, symlinks, files over 5 MiB, empty notes, failed/authentication captures and legacy duplicate capture paths are excluded from retrieval. PDFs are catalogued and signature-checked. Select PDFs in Library for bounded local extraction and searchable page citations; encrypted/corrupt/scanned files have explicit outcomes. OCR is disabled. Originals remain intact.
+
+Search supports Unicode words and aliases, folds Latin accents/case (café/cafe match), preserves Dhivehi combining marks, and returns sections with line ranges. Filter by origin, type, tag, project or review state. The note viewer displays provenance, source references, existing links and escaped source content with line anchors. Project, review and exclusion preferences are stored separately from source notes. Review preferences also protect source summaries from subsequent AI generation. AI summaries sample sections across a document instead of only its beginning.
+
+**Ask AI** requires enabled AI settings and an explicit evidence scope. The default scope is browsing captures only. Choosing **Include my imported notes** authorizes matching personal-note excerpts to be sent to the configured provider for that question. Answers use up to six sections, at most two per underlying source, and retain the exact cited excerpts, document IDs, revision hashes and line ranges. Open a citation to read its original evidence even after the source changes or disappears. Historical answers predating this release cannot recover missing excerpt snapshots. Local indexing/search never invokes the provider. Imported instructions and source text are treated as evidence, never executable instructions.
+
+**Vault health** (`/library/health`) reports empty/thin notes, incomplete provenance, inconsistent types, unresolved/ambiguous links, duplicate content, embedded page data, invalid PDF captures and recoverable filename encoding damage. Findings are review suggestions; example links can be intentional. Filename recovery previews referring notes and app relationships, reports file/catalog collisions, and requires a fresh content hash before applying. Edits after preview block the repair; existing Markdown links remain for review in Obsidian. ZIP imports recover legacy UTF-8 filenames mislabelled as CP437 and normalize Unicode while detecting duplicate destinations. Capture controls support per-URL retry/exclusion, and new login/redirect/challenge or unreadable captures are blocked before saving.
+
+**Research questions** (`/library/questions`) collects Open questions sections from notes. Resolve one by linking an indexed answer note; reopen it when necessary. Shared tags and project assignments produce suggested connections on each note. Accepted connections are stored in the app and exported as companion notes under `Forgetful Me/Connections`; original imported notes are preserved. The Overview now reports searchable files, review coverage, research questions and health findings.
+
+
+## Resumable upgrades and isolated validation
+
+[UPGRADE_CHECKLIST.md](UPGRADE_CHECKLIST.md) is the current checkpoint: completed
+checks, remaining tasks, exact next action and deployment state. Read it before
+continuing, then [UPGRADE_PLAN.md](UPGRADE_PLAN.md) and the latest
+[WORKLOG.md](WORKLOG.md) entry. [AI_AGENT_HANDOFF.md](AI_AGENT_HANDOFF.md) includes
+agent context. Update all four when completing a delivery or stopping work.
+
+Evidence permission is independent from a note's folder and display origin.
+ZIP provenance keeps imported notes imported, including notes inside archive
+folders. Generated answers, connection companions and navigation/index notes
+stay available for local reading but cannot feed AI retrieval. Unknown generated
+source lineage is excluded from outbound evidence. Source-family exclusions are
+rechecked when constructing prompts, including questions queued earlier. Local
+indexing/search works while AI is paused; explicit provider diagnostics use only
+a synthetic prompt.
+
+Index jobs and sanitized file/publication/rename failures appear in Vault health.
+Missing mounts or incomplete enumeration never discard the catalog. A failed
+file keeps its last good revision while unrelated files can index. Stable note
+IDs preserve app preferences, question resolutions and connections across
+journaled filename repairs. On the Linux Docker runtime, repairs use atomic
+no-overwrite rename and recover pending journals after a restart. Unsupported
+filesystems/platforms fail safely. Source notes are never rewritten to repair
+embedded links; broader link/connection export recovery remains on the checklist.
+
+New captures are immutable. Changed content invalidates a summary; reviewed
+summaries stay intact with a pending update. Generated-note publication validates
+ownership, stored generated-content signatures and expected destination hashes;
+detected conflicts retain a separate pending draft. Existing managed-file
+updates still use optimistic compare/replace: strict protection against arbitrary
+external-editor races and conflict-resolution tools remain FM-02 work.
+
+Run the repeatable fixture suite from this repository:
+
+```sh
+python3 scripts/run_isolated_tests.py --check-config
+python3 scripts/run_isolated_tests.py
+```
+
+The runner validates a standalone `compose.test.yaml`, builds a unique candidate
+image, applies migrations twice, and executes scripts via stdin. It creates a
+unique disposable PostgreSQL/vault/content project on an internal network, with
+synthetic credentials, no host mounts/ports and no inference workers. It records
+source/image fingerprints, rejects source changes during testing, and removes
+only that test project's resources afterward. Production `.env`, database,
+vault and external services are excluded. Mutating library/HTTP fixtures refuse
+production defaults. App database host/name/user/port can be injected using
+`PGHOST`, `PGDATABASE`, `PGUSER`, `PGPORT`; existing production defaults stay intact.
+
+Retain the exact passing candidate image for an authorized deployment, apply
+additive migrations, recreate the four app services, and compare their app hashes
+and health with the tested source. Use read-only production checks afterward.
+The fixture harness is not a backup restore rehearsal; that FM-09 step is pending.
+
+### Upgrade verification and recovery
+
+See UPGRADE_CHECKLIST.md for the exact deployed candidate and pending acceptance work. `python3 scripts/run_isolated_tests.py` runs disposable regressions; add `--benchmark` for 1k/10k retrieval measurements. `scripts/backup_before_upgrade.py` saves a fresh private baseline/database/vault backup and leaves background writers paused until rollout. External editors/Obsidian are separate writers; these archives are sequential, not an atomic full-stack snapshot.
+
+Use `python3 scripts/restore_drill.py --database PATH --vault PATH --image TESTED_IMAGE` to rehearse in disposable resources. `python3 scripts/verify_release.py --baseline PRIVATE_BASELINE --image TESTED_IMAGE` checks live code/image/health and original/settings preservation read-only. The DB/vault drill has passed; content/config offline recovery also passed; matched full-stack runtime/credential rollback remains pending. Older code is not a verified rollback against newer schema; review compatibility and restore a matched backup pair with the same credentials before production recovery.
+
+Open **Index jobs and recovery** (`/library/jobs`) from Vault health for paginated scan history, file errors and rename conflicts. Retry failed scans after resolving permissions/content problems; local-index pause keeps scans queued. Rename journal retry reuses the original content hash and refuses changed files or destination collisions. Originals and last good evidence remain preserved.
+
+`python3 scripts/volume_restore_drill.py --content PRIVATE_CONTENT_ARCHIVE --obsidian-config PRIVATE_CONFIG_ARCHIVE --image TESTED_IMAGE` verifies regular-file hashes/ownership in new offline disposable volumes only. It excludes links/special files; the rehearsed configuration had three Chromium Singleton runtime links, which must not be carried to a restored desktop. The saved content archive was empty, so nonempty binary/hidden fixtures were also tested. This tool never restores live volumes or starts Obsidian. Keep matched production archives and original credential environment for an actual recovery.
+
+`python3 scripts/full_restore_drill.py --backup-dir PRIVATE_SCHEDULED_BACKUP_DIR --image TESTED_IMAGE` checks a matched four-archive backup set in disposable resources. It compares original database columns through forward migrations, verifies a seeded state/credential roundtrip, starts restored FastAPI with six authenticated page checks, and checks content/config hashes and ownership. It publishes no ports and starts no workers/providers/Obsidian. Synthetic encryption tests do not replace preserving the original production ADMIN_PASSWORD/environment; old-code/new-schema and desktop-runtime rollback remain unverified.
+
+Library Origin now includes **generated** for app navigation and legacy browsing-history display, with explicit imported ZIP provenance taking precedence. Counts separate those files from imported notes. Display labels do not change AI evidence scope, source lineage or exclusions.
+
+
+2026-10-07 latest checkpoint: FM-01–06 and FM-08 complete; FM-07/09 remain partial. Ten populated responsive UI screens passed scoped checks. Unused pip removed from runtime; 19 tests passed and exact candidate b1258a3cddfe deployed/verified. Companion scans have high/critical findings; archive desktop image is absent locally and its OS audit is unavailable. Resume UPGRADE_CHECKLIST.md and reports/container-audit-review-2026-10-07.md before companion recreation. AI remains paused; model answer/abstention evaluation and actual desktop rollback remain outstanding.
+
+
+2026-10-07 companion follow-up: patched Caddy proxy deployed after isolated real-config/auth/routing checks; no high findings in its final scan (three other entries remain). Backup service healthy after restart and fresh scheduled backup. Exact pinned PostgreSQL restore verified latest saved DB/vault; PostgreSQL tag unchanged. Archive candidate passed empty-state startup/restart only and remains undeployed with high/critical findings. Resume remaining database/desktop/crawler advisory and saved-state rollback work in UPGRADE_CHECKLIST.md; evidence in reports/companion-update-2026-10-07.md.
+
+
+2026-10-07 database/desktop follow-up: tested PostgreSQL17.11 zlib correction deployed to database/backup (exact image 5fab158ded33); source/settings verification passed. Matched same-image Obsidian HTTP/process startup/restart and original source preservation passed on copied volumes. Obsidian candidate downloads timed out; current desktop and optional Crawl4AI digests pinned. Remaining: crawler/desktop/archive patches, cross-version/interactive rollback and paused model evaluation. Resume reports/database-desktop-checkpoint-2026-10-07.md and UPGRADE_CHECKLIST.md.
+
+
+2026-10-07 crawler delivery: available Debian updates, PyJWT/urllib3 fixes and Requests-compatible chardet deployed after real extraction/restart and JWT-enabled API tests. Upstream overlapping jwt/PyJWT namespace repaired with a maintained auth adapter. Exact image e12f6af5ffe9; original launch configuration preserved and old crawler retained stopped for rollback. Notes/settings verification passed; scanner rules 995→771, critical 35→25. Next: Crawl4AI 0.9.0/anyio/nltk candidate tests, desktop cross-version recovery and archive compatibility. Read reports/crawler-delivery-2026-10-07.md and UPGRADE_CHECKLIST.md.
+
+
+## Latest checkpoint — 2026-10-07 23:35 Maldives
+
+Matching Crawl4AI 0.9.4 server/library and compatible app client are deployed. Twenty isolated scripts and the actual API/auth/config/restart matrix passed; all five app services are healthy. Original 1,201 sources and ingestion settings are preserved; AI remains paused. Direct crawler API access now requires a bearer token; the app receives its private token from ignored `.env`. Final crawler scan still contains 25 critical rules (768 total), requiring further artifact/runtime triage. FM-07/09 remain partial. Resume `UPGRADE_CHECKLIST.md` and `reports/modern-crawler-delivery-2026-10-07.md` for minimal-base/advisory work, desktop cross-version recovery and archive image/state compatibility. Earlier dated entries are historical.
+
+
+Latest continuation (2026-10-07 23:48 Maldives): read-only crawler triage recorded 22 critical rules in historical metadata and three in installed OS components; no exploitability clearance. Experimental Python 3.12 supervisor candidate e208621bb2ac passed the full extraction/restart/auth matrix and removes Python 3.11. It is not deployed. Automatic approval review blocked external Docker Scout metadata transmission; next prerequisite is explicit scan approval, then bundled Node/fork review and maintained-build integration. See reports/crawler-runtime-triage-2026-10-07.md and WORKLOG.md. Production and AI pause remain unchanged.
+
+
+Latest continuation (2026-10-08 10:15 Maldives): official 0.9.4 image extraction/restart passed but no-expiration JWT acceptance failed. Maintained crawler build now uses the pinned new official base plus existing auth/dependency fixes and Supervisor 4.3.0 on Python 3.12.14; duplicate Python 3.11 removed. Exact candidate 3e099e0a5b4a passed the full modern API/extraction/restart matrix, but remains undeployed awaiting explicit Docker Scout metadata transmission approval and fresh scan. Remaining FFmpeg/TIFF, browser Node/fork advisory review and desktop/archive recovery stay open. Production and AI pause are unchanged. Resume reports/new-base-crawler-continuation-2026-10-08.md.

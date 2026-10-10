@@ -1,0 +1,21 @@
+{
+  "image": "sha256:0ae1b2ffe772a0b4b2107f24e3462d22fa6067706d5b2f8a7cde964f855db863",
+  "matched_backup": "20261007T173508Z",
+  "restored_regular_files": {
+    "vault": 6839,
+    "config": 349
+  },
+  "runtime_special_files_skipped": {
+    "vault": 0,
+    "config": 3
+  },
+  "http_startup_restart": true,
+  "obsidian_process_running": true,
+  "original_vault_source_files_unchanged": true,
+  "obsidian_workspace_metadata_changes": "allowed only under .obsidian/",
+  "internal_network": true,
+  "published_ports": false,
+  "original_config_hashes_verified_before_startup": true,
+  "config_mutations_after_startup": "expected, disposable only",
+  "interactive_ui_and_plugin_compatibility": "not evaluated"
+}

@@ -1,0 +1,11 @@
+{
+  "python": "3.12.14",
+  "supervisor": "4.3.0",
+  "system_python311_removed": true,
+  "os_packages": [
+    "libavcodec59 7:5.1.9-0+deb12u1",
+    "libavformat59 7:5.1.9-0+deb12u1",
+    "libavutil57 7:5.1.9-0+deb12u1",
+    "libtiff6 4.5.0-6+deb12u4"
+  ]
+}

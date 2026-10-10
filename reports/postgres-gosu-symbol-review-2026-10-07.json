@@ -1,0 +1,16 @@
+{
+  "binary_path": "/usr/local/bin/gosu",
+  "version": "1.19 go1.24.6 linux/arm64",
+  "symbols": {
+    "crypto_tls": [],
+    "http": [],
+    "idna": [],
+    "switch_user": [
+      "main.SetupUser",
+      "main.SetupUser"
+    ]
+  },
+  "method": "ASCII symbol prefix inspection, not govulncheck call graph",
+  "critical_findings": "TLS session resumption and IDNA conversion",
+  "limitations": "absence of symbols alone is not full exploitability proof"
+}

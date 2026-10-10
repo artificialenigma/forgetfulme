@@ -1,0 +1,83 @@
+# Standalone fixture stack. Never combine with the production compose.yaml.
+x-test-app: &test-app
+  image: ${FM_TEST_IMAGE:?Use scripts/run_isolated_tests.py}
+  build: .
+  init: true
+  environment: &test-environment
+    FM_TEST_ISOLATED: '1'
+    FM_TEST_RUN_ID: ${FM_TEST_RUN_ID:?Use scripts/run_isolated_tests.py}
+    PGHOST: test-db
+    PGDATABASE: forgetfulme_test
+    PGUSER: test_runner
+    POSTGRES_PASSWORD: disposable-fixture-password
+    ADMIN_USER: fixture-admin
+    ADMIN_PASSWORD: disposable-fixture-admin
+    OLLAMA_URL: http://provider-disabled.invalid:11434
+    OLLAMA_MODEL: fixture-model
+    FM_TEST_BASE_URL: http://test-web:8000
+  networks: [isolated]
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  read_only: true
+  tmpfs: [/tmp]
+  volumes:
+    - test_vault:/vault
+    - test_content:/data/content
+
+services:
+  test-db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: forgetfulme_test
+      POSTGRES_USER: test_runner
+      POSTGRES_PASSWORD: disposable-fixture-password
+    networks: [isolated]
+    volumes:
+      - test_database:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U test_runner -d forgetfulme_test']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  test-init:
+    <<: *test-app
+    user: root
+    cap_add: [CHOWN, DAC_OVERRIDE]
+    command:
+      - python
+      - -c
+      - |
+        import os
+        from pathlib import Path
+        for location in ('/vault', '/data/content'):
+            directory = Path(location)
+            directory.mkdir(parents=True, exist_ok=True)
+            os.chown(directory, 10001, 10001)
+        marker = Path('/vault/.forgetfulme-isolated-test')
+        if marker.exists():
+            assert marker.read_text().strip() == os.environ['FM_TEST_RUN_ID']
+        else:
+            marker.write_text(os.environ['FM_TEST_RUN_ID'])
+            os.chown(marker, 10001, 10001)
+
+  test-web:
+    <<: *test-app
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/health/ready", timeout=3)']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  test-runner:
+    <<: *test-app
+    command: [python, -]
+
+networks:
+  isolated:
+    internal: true
+
+volumes:
+  test_database:
+  test_vault:
+  test_content:

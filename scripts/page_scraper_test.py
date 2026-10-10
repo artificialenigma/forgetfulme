@@ -44,18 +44,25 @@ class DB:
     def execute(self,sql,params=None):
         if sql.startswith('UPDATE'):self.update=(sql,params);return Result(None)
         return Result({'url_hash':'hash','url':'https://example.com','attempts':self.attempts})
+def process_fixture():
+    # Scheduling/budgets are covered by ingestion_policy_test; this fixture
+    # targets fetch outcomes and revision processing with a synthetic row.
+    with patch('app.ingestion_policy.claim_capture',side_effect=lambda db:db.execute('SELECT fixture').fetchone()):
+        return module.process_page()
 for attempts,expected in [(0,'retry'),(2,'failed')]:
     db=DB(attempts)
     with patch.object(module,'connect',return_value=db),patch.object(module,'scrape_page',side_effect=module.FetchFailed('Connection or TLS failure')):
-        assert module.process_page()
+        assert process_fixture()
         assert db.update[1][0]==expected
 print('Public-address checks, extraction, boilerplate removal, deduped files, robots, content-type and retry tests passed')
 
 db=DB()
-with patch.object(module,'connect',return_value=db),patch.object(module,'scrape_page',return_value=('Forgetful Me/Pages/hash.md','https://example.com','Trafilatura')):
-    module.process_page()
-    assert "state='complete'" in db.update[0] and db.update[1][1]=='Forgetful Me/Pages/hash.md'
+with TemporaryDirectory() as temp:
+    fixture=Path(temp)/'capture.md';fixture.write_text('# Fixture\n\n---\n\nSource evidence')
+    with patch.object(module,'connect',return_value=db),patch.object(module,'scrape_page',return_value=('Forgetful Me/Pages/hash.md','https://example.com','Trafilatura')),patch('app.library.safe_path',return_value=fixture):
+        process_fixture()
+        assert "state='complete'" in db.update[0] and db.update[1][1]=='Forgetful Me/Pages/hash.md'
 db=DB()
 with patch.object(module,'connect',return_value=db),patch.object(module,'scrape_page',side_effect=module.Blocked('Private address')):
-    module.process_page()
+    process_fixture()
     assert "state='blocked'" in db.update[0]

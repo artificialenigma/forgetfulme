@@ -8,6 +8,7 @@ import shutil
 import stat
 import tempfile
 import zipfile
+import unicodedata
 from email import policy
 from email.parser import BytesParser
 from pathlib import Path, PurePosixPath
@@ -23,7 +24,7 @@ MAX_ZIP=100*1024*1024
 MAX_EXPANDED=500*1024*1024
 
 
-def import_zip(content, vault=Path('/vault')):
+def import_zip(content, vault=Path('/vault'), record_origins=False):
     if len(content)>MAX_ZIP: raise ValueError('ZIP exceeds 100 MiB')
     with zipfile.ZipFile(io.BytesIO(content)) as archive:
         members=archive.infolist()
@@ -31,6 +32,10 @@ def import_zip(content, vault=Path('/vault')):
         selected=[];skipped=0;expanded=0;names=set()
         for item in members:
             name=item.filename
+            if not item.flag_bits & 0x800:
+                try: name=name.encode('cp437').decode('utf-8')
+                except UnicodeError: pass
+            name=unicodedata.normalize('NFC',name)
             path=PurePosixPath(name)
             if '\\' in name or path.is_absolute() or '..' in path.parts or ':' in name or '\x00' in name:
                 raise ValueError('ZIP contains an unsafe path')
@@ -69,6 +74,13 @@ def import_zip(content, vault=Path('/vault')):
                         total+=len(chunk)
                         if total>MAX_EXPANDED:raise ValueError('Expanded ZIP exceeds 500 MiB')
                         output.write(chunk)
+            if record_origins:
+                # Commit provenance before files become visible to the indexer.
+                # Reserved imports stay imported even if their YAML impersonates
+                # an app source or their destination is an archive subfolder.
+                with connect() as db:
+                    for _,relative in plan:
+                        db.execute('INSERT INTO library_import_origins(path) VALUES (%s) ON CONFLICT DO NOTHING',(str(relative),))
             created=[]
             try:
                 for _,relative in plan:
@@ -118,7 +130,7 @@ async def upload(request: Request):
     def perform():
         with open('/tmp/forgetfulme-vault-import.lock','a') as lock:
             fcntl.flock(lock,fcntl.LOCK_EX)
-            return import_zip(content)
+            return import_zip(content, record_origins=True)
     try:
         imported,skipped=await run_in_threadpool(perform)
     except (ValueError,zipfile.BadZipFile,RuntimeError,OSError):

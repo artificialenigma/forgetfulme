@@ -29,11 +29,6 @@ if __name__ == "__main__":
         try:
             tick(role)
             if role == "worker":
-                with connect() as db:
-                    enabled=db.execute("SELECT automation_enabled FROM vault_controls WHERE id=1").fetchone()["automation_enabled"]
-                if not enabled:
-                    time.sleep(10)
-                    continue
                 from app.obsidian_export import export_pending
                 count = export_pending()
                 if count:

@@ -1,0 +1,15 @@
+{
+  "image": "sha256:35eabc8e6da154873a6846bf95e6d11bb5bb1a97d129fa3d1efad21ba8bf81fe",
+  "previous_image": "sha256:e12f6af5ffe90c5554277fcd118034d949e230e78b9a2fcf8a1a779528f0f0f9",
+  "retained_stopped_container": "crawl4ai-rollback-20261007T183030Z",
+  "private_backup": "crawler-upgrade-20261007T183030Z",
+  "ports_networks_preserved": true,
+  "legacy_config_environment_preserved": false,
+  "modern_auth_and_config_migration": true,
+  "worker_health_route": false,
+  "worker_left_stopped_for_app_rollout": true,
+  "rollback": "original stopped container retained; automatic recovery on deployment failure",
+  "coordinated_app_rollout_completed": true,
+  "app_image": "forgetfulme-test:762a461c255a",
+  "post_rollout_worker_health_and_auth": "passed"
+}

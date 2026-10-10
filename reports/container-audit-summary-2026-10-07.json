@@ -1,0 +1,84 @@
+{
+  "scanner": "Docker Scout 1.24.0",
+  "scope": "exact locally running stack images; no pulls/updates; advisory counts not exploitability determinations",
+  "images": [
+    {
+      "service": "forgetfulme-web-1",
+      "image": "sha256:053ea879addf3dc8d48e103038690334076e8f020f7ee931b2067a55d2d34ac0",
+      "report": "reports/container-audit-forgetfulme-web-1-2026-10-07.sarif.json",
+      "advisory_counts": {
+        "LOW": 26,
+        "MEDIUM": 3,
+        "HIGH": 7
+      },
+      "unique_advisories": 36
+    },
+    {
+      "service": "forgetfulme-db-1",
+      "image": "sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+      "report": "reports/container-audit-forgetfulme-db-1-2026-10-07.sarif.json",
+      "advisory_counts": {
+        "LOW": 7,
+        "MEDIUM": 26,
+        "HIGH": 23,
+        "CRITICAL": 2
+      },
+      "unique_advisories": 58
+    },
+    {
+      "service": "forgetfulme-backup-1",
+      "image": "sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24",
+      "report": "reports/container-audit-forgetfulme-db-1-2026-10-07.sarif.json",
+      "advisory_counts": {
+        "LOW": 7,
+        "MEDIUM": 26,
+        "HIGH": 23,
+        "CRITICAL": 2
+      },
+      "unique_advisories": 58
+    },
+    {
+      "service": "forgetfulme-proxy-1",
+      "image": "sha256:881bbc60f9986d5ab8e7cfd6cf7e4ef3c9c0439fef2429d035d065577882f028",
+      "report": "reports/container-audit-forgetfulme-proxy-1-2026-10-07.sarif.json",
+      "advisory_counts": {
+        "UNSPECIFIED": 2,
+        "MEDIUM": 1,
+        "HIGH": 1
+      },
+      "unique_advisories": 4
+    },
+    {
+      "service": "forgetfulme-obsidian-1",
+      "image": "sha256:0ae1b2ffe772a0b4b2107f24e3462d22fa6067706d5b2f8a7cde964f855db863",
+      "report": "reports/container-audit-forgetfulme-obsidian-1-2026-10-07.sarif.json",
+      "advisory_counts": {
+        "UNSPECIFIED": 114,
+        "LOW": 269,
+        "MEDIUM": 148,
+        "HIGH": 111,
+        "CRITICAL": 31
+      },
+      "unique_advisories": 673
+    },
+    {
+      "service": "forgetfulme-archive-desk-1",
+      "image": "sha256:a2b034a967e2ff88b4c0308097f2c2c466f0086cba7954e4cd924939eb875a7e",
+      "audit_state": "unavailable",
+      "exit_code": 1
+    },
+    {
+      "service": "crawl4ai",
+      "image": "sha256:a45fd08f8f15f67026c1bff0a151f0479244caf6751a0c6943b3870efafcd025",
+      "report": "reports/container-audit-crawl4ai-2026-10-07.sarif.json",
+      "advisory_counts": {
+        "UNSPECIFIED": 71,
+        "LOW": 354,
+        "MEDIUM": 255,
+        "HIGH": 280,
+        "CRITICAL": 35
+      },
+      "unique_advisories": 995
+    }
+  ]
+}

@@ -38,7 +38,7 @@ def authenticate(request: Request, credentials: Annotated[HTTPBasicCredentials |
 
 def login_destination(value):
     # Only known pages are accepted: never redirect to user-provided external URLs.
-    return value if value in {"/", "/devices", "/history", "/history/import", "/history/capture", "/vault", "/vault/wiki", "/settings/ai", "/vault/import"} else "/"
+    return value if value in {"/", "/devices", "/history", "/history/import", "/history/capture", "/vault", "/vault/wiki", "/settings/ai", "/vault/import", "/library", "/library/health", "/library/questions", "/library/pdf", "/settings/ingestion", "/library/publications", "/library/projects"} else "/"
 
 
 def login_page(error="", destination="/"):
@@ -147,7 +147,9 @@ def status():
 def dashboard(request: Request, credentials: Annotated[HTTPBasicCredentials | None, Depends(security)]):
     if not authorized(request, credentials):
         return RedirectResponse("/login", status_code=303)
-    return render(snapshot())
+    from app.library_routes import summary
+    state=snapshot();state['library']=summary()
+    return render(state)
 
 
 # Device tokens authorize ingestion only, independently of administrator sessions.
@@ -162,3 +164,14 @@ app.include_router(ai_router)
 
 from app.vault_import import router as vault_import_router
 app.include_router(vault_import_router)
+
+from app.library_routes import router as library_router
+app.include_router(library_router)
+
+from app.pdf_routes import router as pdf_router
+from app.ingestion_routes import router as ingestion_router
+app.include_router(pdf_router)
+app.include_router(ingestion_router)
+
+from app.publication_routes import router as publication_router
+app.include_router(publication_router)
